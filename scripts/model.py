@@ -3,6 +3,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 import matplotlib.pyplot as plt
+from matplotlib import animation
 import numpy as np
 
 
@@ -20,6 +21,7 @@ class doubleIntegrator():
         self.uy = 0
         self.t = 0
         self.dt = 0.01
+        self.buffer = []
         self.A = np.array([[1, 0, self.dt, 0],
                            [0, 1, 0, self.dt],
                            [0, 0, 1, 0],
@@ -37,26 +39,25 @@ class doubleIntegrator():
         self.y = x_new[1]
         self.vx = x_new[2]
         self.vy = x_new[3]
-        done = self.check_done(self.x, self.y, self.goal_x, self.goal_y)
-        reward = self.get_reward(self.x, self.y, self.goal_x, self.goal_y)
+        done = self.check_done()
+        reward = self.get_reward()
+        self.buffer.append([self.x, self.y, self.vx, self.vy])
+
         return x_new, reward, done, {}
 
     def reset(self):
-        self.x = 0
-        self.y = 0
-        self.xdot = 0
-        self.ydot = 0
-        self.xddot = 0
-        self.yddot = 0
+        self.x = self.x0
+        self.y = self.y0
+        self.vx = 0
+        self.vy = 0
+        self.ux = 0
+        self.uy = 0
         self.t = 0
-        return self.x, self.y, self.xdot, self.ydot, self.xddot, self.yddot
-
-    def render(self):
-        plt.plot(self.x, self.y)
-        plt.show()
+        self.render()
+        self.buffer = []
 
     def get_state(self):
-        return self.x, self.y, self.xdot, self.ydot, self.xddot, self.yddot
+        return self.x, self.y, self.vx, self.vy, self.ux, self.uy, self.t
 
     def get_time(self):
         return self.t
@@ -65,10 +66,7 @@ class doubleIntegrator():
         return self.x, self.y
 
     def get_velocity(self):
-        return self.xdot, self.ydot
-
-    def get_acceleration(self):
-        return self.xddot, self.yddot
+        return self.vx, self.vy
 
     def get_time_step(self):
         return self.dt
@@ -92,3 +90,22 @@ class doubleIntegrator():
             return True
         else:
             return False
+
+    def render(self):
+        fig, ax = plt.subplots()
+        ax.set_xlim(left=-5, right=5)
+        ax.set_ylim(bottom=-5, top=5)
+        ax.set_aspect('equal', adjustable='box')
+        speed_up = 30
+
+        def animate(idx):
+            print(
+                f"x = {round(self.buffer[speed_up*idx][0],2)} , y = {round(self.buffer[speed_up*idx][1],2)}")
+            ax.plot(self.buffer[speed_up*idx][0],
+                    self.buffer[speed_up*idx][1], 'ro')
+
+        anim = animation.FuncAnimation(
+            fig, animate, frames=round(len(self.buffer)/speed_up), repeat=False)
+        plt.show()
+        fig.clear()
+        ax.clear()
