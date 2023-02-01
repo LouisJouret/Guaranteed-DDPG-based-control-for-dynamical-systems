@@ -22,13 +22,18 @@ def main() -> None:
             done = False
             score = 0
             while not done:
-                state = system.get_state()
-                print(f"states : {state}")
+                state = tf.constant(system.get_state(), dtype=tf.float32)
                 action = agent.act(state)
-                statesNext, reward, done, _ = system.step(action)
-                agent.buffer.append([statesNext, reward])
+                nextState, reward, done, _ = system.step(action)
+                nextState = tf.constant(nextState)
+                reward = tf.constant(reward)
+                done = tf.constant(done)
+                values = (state, action, reward, done, nextState)
+                valuesBatched = tf.nest.map_structure(
+                    lambda t: tf.stack([t]), values)
+                agent.replayBuffer.add_batch(valuesBatched)
                 agent.train()
-                state = statesNext
+                state = nextState
                 score += reward
             system.reset()
             episodesPerformance.append(score)

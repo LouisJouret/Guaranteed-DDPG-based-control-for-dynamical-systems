@@ -2,6 +2,7 @@
 #
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
+
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy as np
@@ -57,16 +58,16 @@ class doubleIntegrator():
         self.buffer = []
 
     def get_state(self):
-        return self.x, self.y, self.vx, self.vy, self.ux, self.uy, self.t
+        return [self.x, self.y, self.vx, self.vy]
 
     def get_time(self):
         return self.t
 
     def get_position(self):
-        return self.x, self.y
+        return [self.x, self.y]
 
     def get_velocity(self):
-        return self.vx, self.vy
+        return [self.vx, self.vy]
 
     def get_time_step(self):
         return self.dt

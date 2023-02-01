@@ -6,6 +6,8 @@
 import tensorflow as tf
 from networks.actor import Actor
 from networks.critic import Critic
+import random
+from tf_agents.replay_buffers import tf_uniform_replay_buffer
 
 
 class Agent():
@@ -27,7 +29,19 @@ class Agent():
         self.tau = 0.005
 
         self.batchSize = 32
-        self.buffer = []
+        self.maxBufferSize = 1000
+
+        dataSpec = (
+            tf.TensorSpec([1, 4], tf.float32, 'state'),
+            tf.TensorSpec([1, 2], tf.float32, 'action'),
+            tf.TensorSpec([1], tf.float32, 'reward'),
+            tf.TensorSpec([1], tf.float32, 'done'),
+            tf.TensorSpec([1, 4], tf.float32, 'nextState'),
+        )
+        self.replayBuffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+            dataSpec,
+            batch_size=self.batchSize,
+            max_length=self.maxBufferSize)
 
     def act(self, state):
         state = tf.convert_to_tensor([state], dtype=tf.float32)
@@ -41,13 +55,20 @@ class Agent():
         self.actorTarget.set_weights(update)
 
     def train(self):
-        states, statesNext, rewards, actions, dones = self.buffer.sample(
-            self.batchSize)
+        if len(self.buffer) < self.batchSize:
+            return
+        memory = random.sample(self.buffer, self.batchSize)
 
-        states = tf.convert_to_tensor(states, dtype=tf.float32)
-        statesNext = tf.convert_to_tensor(statesNext, dtype=tf.float32)
-        rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
-        actions = tf.convert_to_tensor(actions, dtype=tf.float32)
+        states = tf.convert_to_tensor(
+            [datapoint[:4] for datapoint in memory])
+        actions = tf.convert_to_tensor(
+            [datapoint[4:6] for datapoint in memory])
+        rewards = tf.convert_to_tensor(
+            [datapoint[6] for datapoint in memory])
+        statesNext = tf.convert_to_tensor(
+            [datapoint[7:-1] for datapoint in memory])
+        dones = tf.convert_to_tensor(
+            [datapoint[-1] for datapoint in memory])
 
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
             # compute next action
@@ -73,3 +94,10 @@ class Agent():
             zip(grads2, self.criticMain.trainable_variables))
 
         self.updateTarget()
+
+    def remember(self, state, action, reward, stateNext, done):
+        done = [done]
+        reward = [reward]
+        list = [state, action, reward, stateNext, done]
+        flat_list = [item for sublist in list for item in sublist]
+        self.buffer.append(flat_list)
