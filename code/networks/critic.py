@@ -9,10 +9,11 @@ from tensorflow.python.keras import Model
 import numpy as np
 
 
-class critic():
+class critic(Model):
     "constructor of the critic network"
 
     def __init__(self, inputDim, actionDim, upper_bounds, layer1Dim=512, layer2Dim=512):
+        super().__init__()
         self.inputDim = inputDim
         self.layer1Dim = layer1Dim
         self.layer2Dim = layer2Dim
@@ -31,20 +32,18 @@ class critic():
         self.optimizer = 'adam'
 
     def createModel(self):
-        "creates keras model of 2 dense layers followed by a sigmoid output"
+        "creates keras model for the critic network"
         model = Sequential()
         model.add(Dense(self.layer1Dim, input_dim=self.inputDim, activation='relu'))
         model.add(Dense(self.layer2Dim, activation='relu'))
-        model.add(Dense(self.actionDim, activation='sigmoid'))
-        model.compile(loss=self.loss, optimizer=self.optimizer)
-        return model
+        # no activation function for the critic
+        model.add(Dense(self.actionDim, activation=None))
 
-    def trainTargetModel(self, model, targetModel, buffer):
+    def trainTargetModel(self, model, targetModel):
         "updates target model with weights of model"
-        for i in range(len(buffer)):
-            state, action, reward, next_state, done = buffer[i]
-            targetModel.fit(np.array([state]), np.array(
-                [action]), epochs=1, verbose=0)
-            targetModel.fit(np.array([next_state]), np.array(
-                [reward]), epochs=1, verbose=0)
-        targetModel.set_weights(model.get_weights())
+        mainWeights = model.get_weights()
+        targetWeights = targetModel.get_weights()
+        targetWeights = [self.tau * mainWeight + (1 - self.tau) *
+                         targetWeight for mainWeight, targetWeight in
+                         zip(mainWeights, targetWeights)]
+        targetModel.set_weights(targetWeights)

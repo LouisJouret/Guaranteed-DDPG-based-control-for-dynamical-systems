@@ -5,9 +5,8 @@
 
 import numpy as np
 from model import doubleIntegrator
-import time
 
-model = doubleIntegrator(-3, -3, 2, 2)
+model = doubleIntegrator(-3, -3, 0, 0)
 
 episodes = np.linspace(1, 2, 2)
 for episode in episodes:
