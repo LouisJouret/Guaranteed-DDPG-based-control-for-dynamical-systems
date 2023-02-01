@@ -6,7 +6,6 @@
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras import Model
-import numpy as np
 
 
 class Actor(Model):

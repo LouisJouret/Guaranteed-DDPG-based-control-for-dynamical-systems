@@ -6,7 +6,7 @@
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras import Model
-from actor import Actor
+from networks.actor import Actor
 
 
 class Critic(Model):

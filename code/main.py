@@ -3,19 +3,34 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
+import tensorflow as tf
+from agent import Agent
 import numpy as np
 from dynamicModel import doubleIntegrator
 
-model = doubleIntegrator(-3, -3, 0, 0)
 
-episodes = np.linspace(1, 2, 2)
-for episode in episodes:
-    state = model.get_state()
-    done = False
-    score = 0
-    while not done:
-        action = [-0.3*model.x, -0.1*model.y]
-        n_state, reward, done, info = model.step(action)
-        score += reward
-    model.reset()
-    print('episode {} score {}'.format(episode, score))
+system = doubleIntegrator(-3, -3, 1, 1)
+
+
+with tf.device('GPU:0'):
+    tf.random.set_seed(165835)
+    agent = Agent()
+    episodes = 10
+    episodesPerformance = []
+
+    for episode in episodes:
+        state = system.reset()
+        done = False
+        score = 0
+        while not done:
+            action = agent.act(state)
+            statesNext, reward, done, _ = system.step(action)
+            agent.buffer.append([statesNext, reward])
+            agent.train()
+            state = statesNext
+            score += reward
+        system.reset()
+        episodesPerformance.append(score)
+        movAvgPerf = np.mean(episodesPerformance[-100:])
+        print(
+            f"total reward after {episode} steps is {score} and avg reward is {movAvgPerf[-1]}")
