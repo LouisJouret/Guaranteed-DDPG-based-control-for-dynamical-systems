@@ -3,15 +3,9 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-import gym
-import random
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.layers import Dense, Flatten
-from tensorflow.python.keras.models import Sequential
 from model import doubleIntegrator
 import time
-# from tensorflow.python.keras.optimizers import Adam
 
 model = doubleIntegrator(-3, -3, 2, 2)
 
