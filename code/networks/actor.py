@@ -11,10 +11,9 @@ import numpy as np
 import keras.backend as kerasBackend
 
 
-class actor(Model):
-    def __init__(self, session, stateDim, actionDim, batchSize, layer1Dim=512, layer2Dim=512):
+class Actor(Model):
+    def __init__(self, stateDim, actionDim, batchSize, layer1Dim=512, layer2Dim=512):
         super().__init__()
-        self.session = session
         self.stateDim = stateDim
         self.actionDim = actionDim
         self.layer1Dim = layer1Dim
@@ -22,8 +21,6 @@ class actor(Model):
         self.batchSize = batchSize
         self.numHiddenLayers = 2
         self.learningRate = 0.001
-
-        kerasBackend.set_session(session)
 
         self.model, self.modelWeights, self._model_input = \
             self.createModel()
@@ -53,7 +50,4 @@ class actor(Model):
 
     def trainModel(self, model, buffer):
         "updates model with buffer"
-        self.session.run(self.optimizer, feed_dict={
-            self.states: states,
-            self.action_gradients: action_gradients
-        })
+        pass
