@@ -3,30 +3,46 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-import tensorflow as tf
 from tensorflow.python.keras.layers import Dense, Flatten, Lambda
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras import Model
+import numpy as np
 
 
-class Actor(Model):
-
-    def __init__(self, n_states, n_actions, upper_bounds, n_layer1=512, n_layer2=512):
+class actor(Model):
+    def __init__(self, inputDim, actionDim, upper_bounds, layer1Dim=512, layer2Dim=512):
         super().__init__()
-        self.n_states = n_states
-        self.n_layer1 = n_layer1
-        self.n_layer2 = n_layer2
-        self.n_actions = n_actions
+        self.inputDim = inputDim
+        self.layer1Dim = layer1Dim
+        self.layer2Dim = layer2Dim
+        self.actionDim = actionDim
         self.upper_bounds = upper_bounds
 
-        self.layer1 = Dense(n_layer1, activation="relu")
-        self.layer2 = Dense(n_layer2, activation="relu")
-        self.layer3 = Dense(n_actions, activation="tanh")
-        self.bound_layer = Lambda(lambda x: x * upper_bounds)
+    def createModel(self):
+        "creates keras model of 2 dense layers followed by a sigmoid output"
+        model = Sequential()
+        model.add(Dense(self.layer1Dim, input_dim=self.inputDim, activation='relu'))
+        model.add(Dense(self.layer2Dim, activation='relu'))
+        model.add(Dense(self.actionDim, activation='sigmoid'))
+        model.compile(loss='mse', optimizer='adam')
+        return model
 
-    def call(self, state):
-        x = self.layer1(state)
-        x = self.layer2(x)
-        action = self.bound_layer(self.layer3(x))
+    def trainTargetModel(self, model, targetModel, buffer):
+        "updates target model with weights of model"
+        for i in range(len(buffer)):
+            state, action, reward, next_state, done = buffer[i]
+            targetModel.fit(np.array([state]), np.array(
+                [action]), epochs=1, verbose=0)
+            targetModel.fit(np.array([next_state]), np.array(
+                [reward]), epochs=1, verbose=0)
+        targetModel.set_weights(model.get_weights())
 
-        return action
+    def trainModel(self, model, buffer):
+        "updates model with buffer"
+        for i in range(len(buffer)):
+            state, action, reward, next_state, done = buffer[i]
+            model.fit(np.array([state]), np.array(
+                [action]), epochs=1, verbose=0)
+            model.fit(np.array([next_state]), np.array(
+                [reward]), epochs=1, verbose=0)
+        model.set_weights(model.get_weights())
