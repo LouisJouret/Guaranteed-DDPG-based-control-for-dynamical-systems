@@ -11,7 +11,8 @@ from networks.critic import Critic
 class Agent():
     def __init__(self) -> None:
 
-        self.actorMain = Actor(stateDim=4, actionDim=2, batchSize=1)
+        self.actorMain = Actor(stateDim=4, actionDim=2,
+                               layer1Dim=128, layer2Dim=128)
         self.actorTarget = self.actorMain
         self.criticMain = Critic(self.actorMain)
         self.criticTarget = self.criticMain
@@ -22,7 +23,10 @@ class Agent():
         self.criticTarget.compile(optimizer=self.criticOptimizer)
         self.minAction = -1
         self.maxAction = 1
+        self.gamma = 0.99
+        self.tau = 0.005
 
+        self.batchSize = 32
         self.buffer = []
 
     def act(self, state):
@@ -31,11 +35,41 @@ class Agent():
         actions = tf.clip_by_value(actions, self.minAction, self.maxAction)
         return actions[0]
 
-    def updateTarget(self, tau):
-        update = (1-tau) * self.actorTarget.get_weights() + \
-            tau * self.actorMain.get_weights()
+    def updateTarget(self):
+        update = (1-self.tau) * self.actorTarget.get_weights() + \
+            self.tau * self.actorMain.get_weights()
         self.actorTarget.set_weights(update)
 
     def train(self):
-        states, next_states, rewards, actions, dones = self.buffer.sample(
+        states, statesNext, rewards, actions, dones = self.buffer.sample(
             self.batch_size)
+
+        states = tf.convert_to_tensor(states, dtype=tf.float32)
+        statesNext = tf.convert_to_tensor(statesNext, dtype=tf.float32)
+        rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
+        actions = tf.convert_to_tensor(actions, dtype=tf.float32)
+
+        with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
+            # compute next action
+            targetActions = self.actorTarget(statesNext)
+
+            targetNextState = tf.squeeze(
+                self.criticTarget(statesNext, targetActions), 1)
+            critic_value = tf.squeeze(self.criticMain(states, actions), 1)
+            target_values = rewards + self.gamma * targetNextState * dones
+            critic_loss = tf.keras.losses.MSE(target_values, critic_value)
+
+            new_policy_actions = self.actorMain(states)
+            actor_loss = -self.criticMain(states, new_policy_actions)
+            actor_loss = tf.math.reduce_mean(actor_loss)
+
+        grads1 = tape1.gradient(
+            actor_loss, self.actorMain.trainable_variables)
+        grads2 = tape2.gradient(
+            critic_loss, self.criticMain.trainable_variables)
+        self.actorOptimizer.apply_gradients(
+            zip(grads1, self.actorMain.trainable_variables))
+        self.criticOptimizer.apply_gradients(
+            zip(grads2, self.criticMain.trainable_variables))
+
+        self.updateTarget()

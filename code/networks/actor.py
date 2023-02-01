@@ -10,13 +10,12 @@ import numpy as np
 
 
 class Actor(Model):
-    def __init__(self, stateDim, actionDim, batchSize, layer1Dim=512, layer2Dim=512):
+    def __init__(self, stateDim, actionDim, layer1Dim=512, layer2Dim=512):
         super().__init__()
         self.stateDim = stateDim
         self.actionDim = actionDim
         self.layer1Dim = layer1Dim
         self.layer2Dim = layer2Dim
-        self.batchSize = batchSize
         self.learningRate = 0.001
         self.createModel()
 
