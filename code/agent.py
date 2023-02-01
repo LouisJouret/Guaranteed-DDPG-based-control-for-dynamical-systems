@@ -10,14 +10,32 @@ from networks.critic import Critic
 
 class Agent():
     def __init__(self) -> None:
-        self.actorMain = Actor()
-        self.actorTarget = Actor()
-        self.criticMain = Critic()
-        self.criticTarget = Critic()
-        self.batch_size = 64
-        self.actionsDim = len(env.action_space.high)
+
+        self.actorMain = Actor(stateDim=4, actionDim=2, batchSize=1)
+        self.actorTarget = self.actorMain
+        self.criticMain = Critic(self.actorMain)
+        self.criticTarget = self.criticMain
+
         self.actorOptimizer = tf.keras.optimizers.Adam(1e-4)
         self.criticOptimizer = tf.keras.optimizers.Adam(1e-4)
-
         self.actorTarget.compile(optimizer=self.actorOptimizer)
         self.criticTarget.compile(optimizer=self.criticOptimizer)
+        self.minAction = -1
+        self.maxAction = 1
+
+        self.buffer = []
+
+    def act(self, state):
+        state = tf.convert_to_tensor([state], dtype=tf.float32)
+        actions = self.actorMain(state)
+        actions = tf.clip_by_value(actions, self.minAction, self.maxAction)
+        return actions[0]
+
+    def updateTarget(self, tau):
+        update = (1-tau) * self.actorTarget.get_weights() + \
+            tau * self.actorMain.get_weights()
+        self.actorTarget.set_weights(update)
+
+    def train(self):
+        states, next_states, rewards, actions, dones = self.buffer.sample(
+            self.batch_size)

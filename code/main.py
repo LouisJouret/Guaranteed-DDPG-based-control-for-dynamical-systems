@@ -4,7 +4,7 @@
 # https://opensource.org/licenses/MIT
 
 import numpy as np
-from model import doubleIntegrator
+from dynamicModel import doubleIntegrator
 
 model = doubleIntegrator(-3, -3, 0, 0)
 
