@@ -31,18 +31,6 @@ class Agent():
         self.batchSize = 32
         self.maxBufferSize = 1000
 
-        dataSpec = (
-            tf.TensorSpec([1, 4], tf.float32, 'state'),
-            tf.TensorSpec([1, 2], tf.float32, 'action'),
-            tf.TensorSpec([1], tf.float32, 'reward'),
-            tf.TensorSpec([1], tf.float32, 'done'),
-            tf.TensorSpec([1, 4], tf.float32, 'nextState'),
-        )
-        self.replayBuffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
-            dataSpec,
-            batch_size=self.batchSize,
-            max_length=self.maxBufferSize)
-
     def act(self, state):
         state = tf.convert_to_tensor([state], dtype=tf.float32)
         actions = self.actorMain(state)
@@ -95,9 +83,5 @@ class Agent():
 
         self.updateTarget()
 
-    def remember(self, state, action, reward, stateNext, done):
-        done = [done]
-        reward = [reward]
-        list = [state, action, reward, stateNext, done]
-        flat_list = [item for sublist in list for item in sublist]
-        self.buffer.append(flat_list)
+    def remember(self, values):
+        self.buffer.add(values)

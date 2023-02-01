@@ -29,9 +29,7 @@ def main() -> None:
                 reward = tf.constant(reward)
                 done = tf.constant(done)
                 values = (state, action, reward, done, nextState)
-                valuesBatched = tf.nest.map_structure(
-                    lambda t: tf.stack([t]), values)
-                agent.replayBuffer.add_batch(valuesBatched)
+                agent.remember((state, action, reward, done, nextState))
                 agent.train()
                 state = nextState
                 score += reward
