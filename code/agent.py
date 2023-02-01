@@ -19,8 +19,8 @@ class Agent():
 
         self.actorOptimizer = tf.keras.optimizers.Adam(1e-4)
         self.criticOptimizer = tf.keras.optimizers.Adam(1e-4)
-        self.actorTarget.compile(optimizer=self.actorOptimizer)
-        self.criticTarget.compile(optimizer=self.criticOptimizer)
+        # self.actorTarget.compile(optimizer=self.actorOptimizer)
+        # self.criticTarget.compile(optimizer=self.criticOptimizer)
         self.minAction = -1
         self.maxAction = 1
         self.gamma = 0.99
