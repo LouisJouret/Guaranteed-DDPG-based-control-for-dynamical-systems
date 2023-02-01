@@ -16,7 +16,6 @@ class Critic(Model):
         self.actionDim = actor.actionDim
         self.layer1Dim = actor.layer1Dim
         self.layer2Dim = actor.layer2Dim
-        self.batchSize = actor.batchSize
         self.learningRate = 0.001
         self.createModel()
 

@@ -42,7 +42,7 @@ class Agent():
 
     def train(self):
         states, statesNext, rewards, actions, dones = self.buffer.sample(
-            self.batch_size)
+            self.batchSize)
 
         states = tf.convert_to_tensor(states, dtype=tf.float32)
         statesNext = tf.convert_to_tensor(statesNext, dtype=tf.float32)
@@ -55,18 +55,18 @@ class Agent():
 
             targetNextState = tf.squeeze(
                 self.criticTarget(statesNext, targetActions), 1)
-            critic_value = tf.squeeze(self.criticMain(states, actions), 1)
-            target_values = rewards + self.gamma * targetNextState * dones
-            critic_loss = tf.keras.losses.MSE(target_values, critic_value)
+            qCritic = tf.squeeze(self.criticMain(states, actions), 1)
+            qBellman = rewards + self.gamma * targetNextState * dones
+            criticLoss = tf.keras.losses.MSE(qBellman, qCritic)
 
-            new_policy_actions = self.actorMain(states)
-            actor_loss = -self.criticMain(states, new_policy_actions)
-            actor_loss = tf.math.reduce_mean(actor_loss)
+            newActions = self.actorMain(states)
+            actorLoss = -self.criticMain(states, newActions)
+            actorLoss = tf.math.reduce_mean(actorLoss)
 
         grads1 = tape1.gradient(
-            actor_loss, self.actorMain.trainable_variables)
+            actorLoss, self.actorMain.trainable_variables)
         grads2 = tape2.gradient(
-            critic_loss, self.criticMain.trainable_variables)
+            criticLoss, self.criticMain.trainable_variables)
         self.actorOptimizer.apply_gradients(
             zip(grads1, self.actorMain.trainable_variables))
         self.criticOptimizer.apply_gradients(
