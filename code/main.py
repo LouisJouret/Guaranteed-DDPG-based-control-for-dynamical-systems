@@ -9,10 +9,7 @@ import numpy as np
 from dynamicModel import doubleIntegrator
 import random
 from matplotlib.animation import FuncAnimation
-from functools import partial
-import time
 from matplotlib import pyplot as plt
-from datetime import datetime
 
 
 def main() -> None:

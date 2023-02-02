@@ -85,6 +85,8 @@ class doubleIntegrator():
         reward = 0
         threshold = 0.2
         if abs(self.x - self.goal_x) < self.successThreshold and abs(self.y - self.goal_y) < self.successThreshold:
+            if self.t == 0:
+                return reward
             reward += 100
             reward += 20*(self.maxTime / self.t)
         elif self.t >= self.maxTime:
@@ -105,19 +107,18 @@ class doubleIntegrator():
         ax.set_xlim(left=-5, right=5)
         ax.set_ylim(bottom=-5, top=5)
         ax.set_aspect('equal', adjustable='box')
-        speed_up = 5
+        speed_up = 2
+        FRAMES_NUMBER = round(len(self.buffer)/speed_up)
 
-        def animate(idx):
-            print(
-                f"x = {round(self.buffer[speed_up*idx][0],2)} , y = {round(self.buffer[speed_up*idx][1],2)}")
-            ax.plot(self.buffer[speed_up*idx][0],
-                    self.buffer[speed_up*idx][1], 'ro')
+        def animate(frame):
+            if frame == FRAMES_NUMBER-1:
+                plt.close()
+            else:
+                ax.plot(self.buffer[speed_up*frame][0],
+                        self.buffer[speed_up*frame][1], 'ro')
 
         goal = plt.Circle((self.goal_x, self.goal_y), 0.2, color='blue')
         ax.add_patch(goal)
         anim = animation.FuncAnimation(
             fig, animate, frames=round(len(self.buffer)/speed_up), repeat=False)
-
         plt.show()
-        fig.clear()
-        ax.clear()

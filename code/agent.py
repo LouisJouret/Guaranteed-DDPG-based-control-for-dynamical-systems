@@ -36,7 +36,7 @@ class Agent():
             tf.TensorSpec([4], tf.float32, 'nextState'),
         )
 
-        self.batchSize = 32
+        self.batchSize = 10
         self.maxBufferSize = 1000
 
         self.replayBuffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
@@ -47,7 +47,6 @@ class Agent():
     def act(self, state):
         state = tf.convert_to_tensor([state], dtype=tf.float32)
         actions = self.actorMain(state)
-        # print(actions)
         actions = tf.clip_by_value(actions, self.minAction, self.maxAction)
         return actions[0]
 
@@ -70,7 +69,7 @@ class Agent():
             sample_batch_size=self.batchSize, num_steps=1)
         iterator = iter(sample)
         trajectories, _ = next(iterator)
-        states, actions, rewards, dones, nextStates = trajectories
+        states, actions, rewards, _, nextStates = trajectories
 
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
             targetActions = self.actorTarget(nextStates)
@@ -81,7 +80,7 @@ class Agent():
             criticLoss = tf.keras.losses.MSE(qBellman, qCritic)
 
             newActions = self.actorMain(nextStates)
-            actorLoss = self.criticMain(nextStates, newActions)  # minus!
+            actorLoss = -self.criticMain(nextStates, newActions)  # minus!
             actorLoss = tf.math.reduce_mean(actorLoss)
 
         grads1 = tape1.gradient(
