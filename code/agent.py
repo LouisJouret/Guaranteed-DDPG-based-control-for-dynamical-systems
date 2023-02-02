@@ -28,8 +28,21 @@ class Agent():
         self.gamma = 0.99
         self.tau = 0.005
 
+        data_spec = (
+            tf.TensorSpec([4], tf.float32, 'state'),
+            tf.TensorSpec([2], tf.float32, 'action'),
+            tf.TensorSpec([1], tf.float32, 'reward'),
+            tf.TensorSpec([4], tf.float32, 'nextState'),
+            tf.TensorSpec([1], tf.bool, 'done')
+        )
+
         self.batchSize = 32
         self.maxBufferSize = 1000
+
+        self.replayBuffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+            data_spec,
+            batch_size=self.batchSize,
+            max_length=self.maxBufferSize)
 
     def act(self, state):
         state = tf.convert_to_tensor([state], dtype=tf.float32)
@@ -38,7 +51,7 @@ class Agent():
         return actions[0]
 
     def updateTarget(self):
-        update = (1-self.tau) * self.actorTarget.get_weights() + \
+        update = (1-self.tau) * self.actorTarget.get_weights() +\
             self.tau * self.actorMain.get_weights()
         self.actorTarget.set_weights(update)
 

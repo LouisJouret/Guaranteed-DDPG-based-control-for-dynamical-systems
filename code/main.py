@@ -29,7 +29,7 @@ def main() -> None:
                 reward = tf.constant(reward)
                 done = tf.constant(done)
                 values = (state, action, reward, done, nextState)
-                agent.remember((state, action, reward, done, nextState))
+                agent.replayBuffer.add_batch(values)
                 agent.train()
                 state = nextState
                 score += reward
