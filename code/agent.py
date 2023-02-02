@@ -8,6 +8,7 @@ from networks.actor import Actor
 from networks.critic import Critic
 import random
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 
 class Agent():
@@ -18,11 +19,10 @@ class Agent():
         self.actorTarget = self.actorMain
         self.criticMain = Critic(self.actorMain)
         self.criticTarget = self.criticMain
-
-        self.actorOptimizer = tf.keras.optimizers.Adam(1e-4)
-        self.criticOptimizer = tf.keras.optimizers.Adam(1e-4)
-        # self.actorTarget.compile(optimizer=self.actorOptimizer)
-        # self.criticTarget.compile(optimizer=self.criticOptimizer)
+        self.actorOptimizer = Adam(learning_rate=0.1)
+        self.criticOptimizer = Adam(learning_rate=0.1)
+        self.actorTarget.compile(optimizer=self.actorOptimizer)
+        self.criticTarget.compile(optimizer=self.criticOptimizer)
         self.minAction = -1
         self.maxAction = 1
         self.gamma = 0.99
@@ -31,9 +31,9 @@ class Agent():
         data_spec = (
             tf.TensorSpec([4], tf.float32, 'state'),
             tf.TensorSpec([2], tf.float32, 'action'),
-            tf.TensorSpec([1], tf.float32, 'reward'),
+            tf.TensorSpec([], tf.float32, 'reward'),
+            tf.TensorSpec([], tf.float32, 'done'),
             tf.TensorSpec([4], tf.float32, 'nextState'),
-            tf.TensorSpec([1], tf.bool, 'done')
         )
 
         self.batchSize = 32
@@ -50,33 +50,32 @@ class Agent():
         actions = tf.clip_by_value(actions, self.minAction, self.maxAction)
         return actions[0]
 
-    def updateTarget(self):
-        update = (1-self.tau) * self.actorTarget.get_weights() +\
-            self.tau * self.actorMain.get_weights()
-        self.actorTarget.set_weights(update)
+    def updateActorTarget(self):
+        weights = []
+        targets = self.actorTarget.weights
+        for i, weight in enumerate(self.actorMain.weights):
+            weights.append(weight * self.tau + targets[i]*(1-self.tau))
+        self.actorTarget.set_weights(weights)
+
+    def updateCriticTarget(self):
+        weights = []
+        targets = self.criticTarget.weights
+        for i, weight in enumerate(self.criticMain.weights):
+            weights.append(weight * self.tau + targets[i]*(1-self.tau))
+        self.criticTarget.set_weights(weights)
 
     def train(self):
-        if len(self.buffer) < self.batchSize:
-            return
-        memory = random.sample(self.buffer, self.batchSize)
-
-        states = tf.convert_to_tensor(
-            [datapoint[:4] for datapoint in memory])
-        actions = tf.convert_to_tensor(
-            [datapoint[4:6] for datapoint in memory])
-        rewards = tf.convert_to_tensor(
-            [datapoint[6] for datapoint in memory])
-        statesNext = tf.convert_to_tensor(
-            [datapoint[7:-1] for datapoint in memory])
-        dones = tf.convert_to_tensor(
-            [datapoint[-1] for datapoint in memory])
+        sample = self.replayBuffer.as_dataset(
+            sample_batch_size=self.batchSize, num_steps=1)
+        iterator = iter(sample)
+        trajectories, _ = next(iterator)
+        states, actions, rewards, dones, nextStates = trajectories
 
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
-            # compute next action
-            targetActions = self.actorTarget(statesNext)
+            targetActions = self.actorTarget(nextStates)
 
             targetNextState = tf.squeeze(
-                self.criticTarget(statesNext, targetActions), 1)
+                self.criticTarget(nextStates, targetActions), 1)
             qCritic = tf.squeeze(self.criticMain(states, actions), 1)
             qBellman = rewards + self.gamma * targetNextState * dones
             criticLoss = tf.keras.losses.MSE(qBellman, qCritic)
@@ -94,7 +93,5 @@ class Agent():
         self.criticOptimizer.apply_gradients(
             zip(grads2, self.criticMain.trainable_variables))
 
-        self.updateTarget()
-
-    def remember(self, values):
-        self.buffer.add(values)
+        self.updateActorTarget()
+        self.updateCriticTarget()

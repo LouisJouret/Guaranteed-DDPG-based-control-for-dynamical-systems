@@ -83,6 +83,7 @@ class doubleIntegrator():
         threshold = 0.1
         if abs(self.x - self.goal_x) < threshold and abs(self.y - self.goal_y) < threshold:
             reward += 100
+        reward -= self.t
         return reward
 
     def check_done(self):

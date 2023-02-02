@@ -26,7 +26,7 @@ class Critic(Model):
         self.lAct = Dense(self.actionDim, activation=None)
 
     def call(self, state, action):
-        x = self.l1(tf.concat([state, action], axis=1))
+        x = self.l1(tf.concat([state, action], axis=2))
         x = self.l2(x)
         x = self.lAct(x)
         return x

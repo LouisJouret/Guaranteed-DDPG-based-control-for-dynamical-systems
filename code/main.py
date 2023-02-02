@@ -7,10 +7,13 @@ import tensorflow as tf
 from agent import Agent
 import numpy as np
 from dynamicModel import doubleIntegrator
+import random
 
 
 def main() -> None:
-    system = doubleIntegrator(-3, -3, 1, 1)
+    x0 = random.randint(-3, 3)
+    y0 = random.randint(-3, 3)
+    system = doubleIntegrator(x0, y0, 0, 0)
 
     with tf.device('GPU:0'):
         tf.random.set_seed(165835)
@@ -24,20 +27,21 @@ def main() -> None:
             while not done:
                 state = tf.constant(system.get_state(), dtype=tf.float32)
                 action = agent.act(state)
+                print(f"state: {state} and action: {action}")
                 nextState, reward, done, _ = system.step(action)
-                nextState = tf.constant(nextState)
-                reward = tf.constant(reward)
-                done = tf.constant(done)
+                nextState = tf.constant(nextState, dtype=tf.float32)
+                reward = tf.constant(reward, dtype=tf.float32)
+                done = tf.constant(done, dtype=tf.float32)
                 values = (state, action, reward, done, nextState)
-                agent.replayBuffer.add_batch(values)
+                values_batched = tf.nest.map_structure(
+                    lambda t: tf.stack([t] * agent.batchSize), values)
+                agent.replayBuffer.add_batch(values_batched)
                 agent.train()
                 state = nextState
                 score += reward
+                # print(score)
             system.reset()
-            episodesPerformance.append(score)
-            movAvgPerf = np.mean(episodesPerformance[-100:])
-            print(
-                f"total reward after {episode} steps is {score} and avg reward is {movAvgPerf[-1]}")
+            print(f"total reward after {episode} steps is {score}")
 
 
 if __name__ == "__main__":
