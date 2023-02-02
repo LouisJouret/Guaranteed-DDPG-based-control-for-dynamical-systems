@@ -19,8 +19,8 @@ class Agent():
         self.actorTarget = self.actorMain
         self.criticMain = Critic(self.actorMain)
         self.criticTarget = self.criticMain
-        self.actorOptimizer = Adam(learning_rate=0.1)
-        self.criticOptimizer = Adam(learning_rate=0.1)
+        self.actorOptimizer = Adam(learning_rate=1e-4)
+        self.criticOptimizer = Adam(learning_rate=1e-4)
         self.actorTarget.compile(optimizer=self.actorOptimizer)
         self.criticTarget.compile(optimizer=self.criticOptimizer)
         self.minAction = -1
@@ -47,6 +47,7 @@ class Agent():
     def act(self, state):
         state = tf.convert_to_tensor([state], dtype=tf.float32)
         actions = self.actorMain(state)
+        # print(actions)
         actions = tf.clip_by_value(actions, self.minAction, self.maxAction)
         return actions[0]
 
@@ -54,7 +55,7 @@ class Agent():
         weights = []
         targets = self.actorTarget.weights
         for i, weight in enumerate(self.actorMain.weights):
-            weights.append(weight * self.tau + targets[i]*(1-self.tau))
+            weights.append(weight * (1 - self.tau) + targets[i]*self.tau)
         self.actorTarget.set_weights(weights)
 
     def updateCriticTarget(self):
@@ -73,15 +74,14 @@ class Agent():
 
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
             targetActions = self.actorTarget(nextStates)
+            targetNextState = self.criticTarget(nextStates, targetActions)
 
-            targetNextState = tf.squeeze(
-                self.criticTarget(nextStates, targetActions), 1)
-            qCritic = tf.squeeze(self.criticMain(states, actions), 1)
-            qBellman = rewards + self.gamma * targetNextState * dones
+            qCritic = self.criticMain(states, actions)
+            qBellman = rewards + self.gamma * targetNextState
             criticLoss = tf.keras.losses.MSE(qBellman, qCritic)
 
-            newActions = self.actorMain(states)
-            actorLoss = -self.criticMain(states, newActions)
+            newActions = self.actorMain(nextStates)
+            actorLoss = self.criticMain(nextStates, newActions)  # minus!
             actorLoss = tf.math.reduce_mean(actorLoss)
 
         grads1 = tape1.gradient(

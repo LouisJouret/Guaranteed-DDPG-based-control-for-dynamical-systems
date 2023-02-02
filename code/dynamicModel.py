@@ -21,7 +21,8 @@ class doubleIntegrator():
         self.ux = 0
         self.uy = 0
         self.t = 0
-        self.dt = 0.01
+        self.dt = 0.1
+        self.maxTime = 5
         self.buffer = []
         self.A = np.array([[1, 0, self.dt, 0],
                            [0, 1, 0, self.dt],
@@ -31,6 +32,7 @@ class doubleIntegrator():
                            [0, 0],
                            [self.dt, 0],
                            [0, self.dt]])
+        self.successThreshold = 0.1
 
     def step(self, action):
         ux, uy = action
@@ -43,6 +45,7 @@ class doubleIntegrator():
         done = self.check_done()
         reward = self.get_reward()
         self.buffer.append([self.x, self.y, self.vx, self.vy])
+        self.t += self.dt
 
         return x_new, reward, done, {}
 
@@ -54,7 +57,7 @@ class doubleIntegrator():
         self.ux = 0
         self.uy = 0
         self.t = 0
-        self.render()
+        # self.render()
         self.buffer = []
 
     def get_state(self):
@@ -80,15 +83,19 @@ class doubleIntegrator():
 
     def get_reward(self):
         reward = 0
-        threshold = 0.1
-        if abs(self.x - self.goal_x) < threshold and abs(self.y - self.goal_y) < threshold:
+        threshold = 0.2
+        if abs(self.x - self.goal_x) < self.successThreshold and abs(self.y - self.goal_y) < self.successThreshold:
             reward += 100
-        reward -= self.t
+            reward += 20*(self.maxTime / self.t)
+        elif self.t >= self.maxTime:
+            reward -= (self.x - self.goal_x)**2 + (self.y - self.goal_y)
         return reward
 
     def check_done(self):
-        threshold = 0.1
-        if abs(self.x - self.goal_x) < threshold and abs(self.y - self.goal_y) < threshold:
+
+        if abs(self.x - self.goal_x) < self.successThreshold and abs(self.y - self.goal_y) < self.successThreshold:
+            return True
+        elif self.t > self.maxTime:
             return True
         else:
             return False
@@ -98,7 +105,7 @@ class doubleIntegrator():
         ax.set_xlim(left=-5, right=5)
         ax.set_ylim(bottom=-5, top=5)
         ax.set_aspect('equal', adjustable='box')
-        speed_up = 30
+        speed_up = 5
 
         def animate(idx):
             print(
@@ -106,8 +113,11 @@ class doubleIntegrator():
             ax.plot(self.buffer[speed_up*idx][0],
                     self.buffer[speed_up*idx][1], 'ro')
 
+        goal = plt.Circle((self.goal_x, self.goal_y), 0.2, color='blue')
+        ax.add_patch(goal)
         anim = animation.FuncAnimation(
             fig, animate, frames=round(len(self.buffer)/speed_up), repeat=False)
+
         plt.show()
         fig.clear()
         ax.clear()

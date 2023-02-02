@@ -9,20 +9,19 @@ from tensorflow.python.keras import Model
 
 
 class Actor(Model):
-    def __init__(self, stateDim, actionDim, layer1Dim=4, layer2Dim=4):
+    def __init__(self, stateDim, actionDim, layer1Dim=20, layer2Dim=20):
         super().__init__()
         self.stateDim = stateDim
         self.actionDim = actionDim
         self.layer1Dim = layer1Dim
         self.layer2Dim = layer2Dim
-        self.learningRate = 0.001
         self.createModel()
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a sigmoid output"
         self.l1 = Dense(self.layer1Dim, activation='relu')
         self.l2 = Dense(self.layer2Dim, activation='relu')
-        self.lAct = Dense(self.actionDim, activation='sigmoid')
+        self.lAct = Dense(self.actionDim, activation='linear')
 
     def call(self, state):
         x = self.l1(state)
