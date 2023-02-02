@@ -18,7 +18,8 @@ def main() -> None:
         tf.random.set_seed(165835)
         agent = Agent()
         episodes = 100
-        episodeScore = [0]*5
+        movAvglength = 10
+        episodeScore = [0]*movAvglength
         lastAvg = 0
 
         for episode in range(episodes):
@@ -28,21 +29,16 @@ def main() -> None:
             done = False
             score = 0
             while not done:
-                state = tf.constant(system.get_state(), dtype=tf.float32)
+                state = system.get_state()
                 action = agent.act(state)
-                nextState, reward, done, _ = system.step(action)
-                nextState = tf.constant(nextState, dtype=tf.float32)
-                reward = tf.constant(reward, dtype=tf.float32)
-                done = tf.constant(done, dtype=tf.float32)
-                values = (state, action, reward, done, nextState)
-                values_batched = tf.nest.map_structure(
-                    lambda t: tf.stack([t] * agent.batchSize), values)
-                agent.replayBuffer.add_batch(values_batched)
+                nextState, reward, done = system.step(state, action)
+                agent.replayBuffer.storexp(
+                    state, action, reward, done, nextState)
                 agent.train()
                 state = nextState
                 score += reward
             episodeScore.append(score)
-            lastAvg = np.mean(episodeScore[-5:])
+            lastAvg = np.mean(episodeScore[-movAvglength:])
             system.reset()
             print(
                 f"total reward after {episode} steps is {score} and episode average is {lastAvg}")

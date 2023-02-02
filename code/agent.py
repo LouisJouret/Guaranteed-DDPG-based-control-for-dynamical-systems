@@ -6,9 +6,11 @@
 import tensorflow as tf
 from networks.actor import Actor
 from networks.critic import Critic
+from buffer import RBuffer
 import random
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 from tensorflow.python.keras.optimizer_v2.adam import Adam
+import numpy as np
 
 
 class Agent():
@@ -28,21 +30,12 @@ class Agent():
         self.gamma = 0.99
         self.tau = 0.005
 
-        data_spec = (
-            tf.TensorSpec([4], tf.float32, 'state'),
-            tf.TensorSpec([2], tf.float32, 'action'),
-            tf.TensorSpec([], tf.float32, 'reward'),
-            tf.TensorSpec([], tf.float32, 'done'),
-            tf.TensorSpec([4], tf.float32, 'nextState'),
-        )
-
         self.batchSize = 10
         self.maxBufferSize = 1000
 
-        self.replayBuffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
-            data_spec,
-            batch_size=self.batchSize,
-            max_length=self.maxBufferSize)
+        self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
+                                    statedim=self.actorMain.stateDim,
+                                    naction=self.actorMain.actionDim)
 
     def act(self, state):
         state = tf.convert_to_tensor([state], dtype=tf.float32)
@@ -65,18 +58,19 @@ class Agent():
         self.criticTarget.set_weights(weights)
 
     def train(self):
-        sample = self.replayBuffer.as_dataset(
-            sample_batch_size=self.batchSize, num_steps=1)
-        iterator = iter(sample)
-        trajectories, _ = next(iterator)
-        states, actions, rewards, _, nextStates = trajectories
+        if self.replayBuffer.cnt < self.batchSize:
+            return
+
+        states, actions, rewards, dones, nextStates = self.replayBuffer.sample(
+            self.batchSize)
 
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
-            targetActions = self.actorTarget(nextStates)
-            targetNextState = self.criticTarget(nextStates, targetActions)
+
+            nextAction = self.actorTarget(nextStates)
+            qNext = self.criticTarget(nextStates, nextAction)
 
             qCritic = self.criticMain(states, actions)
-            qBellman = rewards + self.gamma * targetNextState
+            qBellman = rewards + self.gamma * qNext
             criticLoss = tf.keras.losses.MSE(qBellman, qCritic)
 
             newActions = self.actorMain(nextStates)

@@ -9,7 +9,7 @@ from tensorflow.python.keras import Model
 
 
 class Actor(Model):
-    def __init__(self, stateDim, actionDim, layer1Dim=20, layer2Dim=20):
+    def __init__(self, stateDim, actionDim, layer1Dim=10, layer2Dim=10):
         super().__init__()
         self.stateDim = stateDim
         self.actionDim = actionDim

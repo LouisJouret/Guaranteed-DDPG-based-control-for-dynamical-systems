@@ -23,10 +23,10 @@ class Critic(Model):
         "creates keras model of 2 dense layers followed by a sigmoid output"
         self.l1 = Dense(self.layer1Dim, activation='relu')
         self.l2 = Dense(self.layer2Dim, activation='relu')
-        self.lAct = Dense(self.actionDim, activation='linear')
+        self.lq = Dense(1, activation='linear')
 
     def call(self, state, action):
-        x = self.l1(tf.concat([state, action], axis=2))
+        x = self.l1(tf.concat([state, action], axis=1))
         x = self.l2(x)
-        x = self.lAct(x)
+        x = self.lq(x)
         return x
