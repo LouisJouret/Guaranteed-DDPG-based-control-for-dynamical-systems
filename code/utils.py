@@ -42,7 +42,7 @@ def plotReward(episodeAvgScore) -> None:
 def getInitialPoint() -> None:
     x0 = 0
     y0 = 0
-    while abs(x0) < 0.2 and abs(y0) < 0.2:
+    while abs(x0) < 0.5 and abs(y0) < 0.5:
         x0 = random.randint(-500, 500)/100
         y0 = random.randint(-500, 500)/100
     return x0, y0

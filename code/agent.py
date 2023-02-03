@@ -17,7 +17,7 @@ class Agent():
     def __init__(self) -> None:
 
         self.actorMain = Actor(stateDim=4, actionDim=2,
-                               layer1Dim=128, layer2Dim=128)
+                               layer1Dim=10, layer2Dim=10)
         self.actorTarget = self.actorMain
         self.criticMain = Critic(self.actorMain)
         self.criticTarget = self.criticMain
@@ -25,10 +25,10 @@ class Agent():
         self.criticOptimizer = Adam(learning_rate=1e-3)
         self.actorTarget.compile(optimizer=self.actorOptimizer)
         self.criticTarget.compile(optimizer=self.criticOptimizer)
-        self.minAction = -0.5
-        self.maxAction = 0.5
+        self.minAction = -1
+        self.maxAction = 1
         self.gamma = 0.99
-        self.tau = 0.1  # 0.005
+        self.tau = 0.005
 
         self.batchSize = 64
         self.maxBufferSize = 300
@@ -40,7 +40,6 @@ class Agent():
     def act(self, state):
         state = tf.convert_to_tensor([state], dtype=tf.float32)
         actions = self.actorMain(state)
-        actions = tf.clip_by_value(actions, self.minAction, self.maxAction)
         return actions[0]
 
     def updateActorTarget(self):

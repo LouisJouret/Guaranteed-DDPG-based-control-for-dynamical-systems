@@ -12,7 +12,7 @@ import utils
 
 def main() -> None:
 
-    tf.random.set_seed(165835)
+    # tf.random.set_seed(165835)
     agent = Agent()
     episodes = 100
     movAvglength = 50
@@ -33,9 +33,9 @@ def main() -> None:
                 state, action, reward, done, nextState)
             agent.train()
             score += reward
-        if episode % 10 == 0:
-            print(agent.actorMain(state))
-            print(agent.criticMain(state, action))
+        # for _ in range(agent.maxBufferSize):
+        #     agent.train()
+
         episodeScore.append(score)
         lastAvg = np.mean(episodeScore[-movAvglength:])
         episodeAvgScore.append(lastAvg)

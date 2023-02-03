@@ -29,7 +29,7 @@ class Critic(Model):
                         kernel_initializer=initializer, kernel_regularizer='l1_l2')
         self.l2 = Dense(self.layer2Dim, activation='relu',
                         kernel_initializer=initializer, kernel_regularizer='l1_l2')
-        self.lq = Dense(1, activation='tanh', kernel_initializer=initializer,
+        self.lq = Dense(1, activation=None, kernel_initializer=initializer,
                         kernel_regularizer='l1_l2')
 
     def call(self, state, action):

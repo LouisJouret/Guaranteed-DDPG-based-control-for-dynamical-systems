@@ -34,7 +34,7 @@ class doubleIntegrator():
                               [0, 0],
                               [self.dt, 0],
                               [0, self.dt]], dtype=tf.float32)
-        self.successThreshold = 0.1
+        self.successThreshold = 0.5
 
     def step(self, state, action):
         x_new = tf.linalg.matvec(self.A, state) + \
@@ -56,14 +56,15 @@ class doubleIntegrator():
         # self.render()
 
     def get_reward(self):
-        if abs(self.state[0][0] - self.goal_x) < self.successThreshold and abs(self.state[0][1] - self.goal_y) < self.successThreshold:
-            if self.t == 0:
-                return 0
-            return 100
-            # reward += (self.maxTime / self.t)
-        elif self.t >= self.maxTime:
-            return (-math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2))
-        return 0
+        if self.check_done():
+            if abs(self.state[0][0] - self.goal_x) < self.successThreshold and abs(self.state[0][1] - self.goal_y) < self.successThreshold:
+                if self.t == 0:
+                    return 0
+                return 100
+                # reward += (self.maxTime / self.t)
+            # elif self.t >= self.maxTime:
+            #     return (-math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2))
+        return (-math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2))/10
 
     def check_done(self):
 
