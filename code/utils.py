@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from agent import Agent
 import tensorflow as tf
 import numpy as np
+import random
 
 
 def plotQ(agent: Agent, action) -> None:
@@ -20,10 +21,13 @@ def plotQ(agent: Agent, action) -> None:
             state = tf.constant([[x, y, 0, 0]], dtype=tf.float32)
             Q = agent.criticMain(state, action)
             QArray[xIdx, yIdx] = Q
+    print(QArray)
     plt.imshow(QArray, interpolation='nearest',
                cmap='hot', extent=[-5, 5, -5, 5])
     plt.colorbar()
     plt.title(f"Q-function for action {action}")
+    plt.xlabel("x")
+    plt.ylabel("y")
     plt.show()
 
 
@@ -33,3 +37,12 @@ def plotReward(episodeAvgScore) -> None:
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.show()
+
+
+def getInitialPoint() -> None:
+    x0 = 0
+    y0 = 0
+    while abs(x0) < 0.2 and abs(y0) < 0.2:
+        x0 = random.randint(-500, 500)/100
+        y0 = random.randint(-500, 500)/100
+    return x0, y0

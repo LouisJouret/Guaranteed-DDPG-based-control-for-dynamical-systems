@@ -3,29 +3,25 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-from matplotlib import pyplot as plt
-from matplotlib.animation import FuncAnimation
-import random
 from dynamicModel import doubleIntegrator
 import numpy as np
 from agent import Agent
 import tensorflow as tf
-from utils import plotQ, plotReward
+import utils
 
 
 def main() -> None:
 
     tf.random.set_seed(165835)
     agent = Agent()
-    episodes = 5
-    movAvglength = 10
+    episodes = 100
+    movAvglength = 50
     episodeScore = [0]*movAvglength
     episodeAvgScore = []
     lastAvg = 0
 
     for episode in range(episodes):
-        x0 = random.randint(-5, 5)
-        y0 = random.randint(-5, 5)
+        x0, y0 = utils.getInitialPoint()
         system = doubleIntegrator(x0, y0, 0, 0)
         done = False
         score = 0
@@ -37,15 +33,20 @@ def main() -> None:
                 state, action, reward, done, nextState)
             agent.train()
             score += reward
+        if episode % 10 == 0:
+            print(agent.actorMain(state))
+            print(agent.criticMain(state, action))
         episodeScore.append(score)
         lastAvg = np.mean(episodeScore[-movAvglength:])
         episodeAvgScore.append(lastAvg)
         system.reset()
-        print(
-            f"total reward after {episode} steps is {score} and last {movAvglength} episode average is {lastAvg}")
 
-    plotReward(episodeAvgScore)
-    plotQ(agent, tf.constant([[1., 1.]], dtype=tf.float32))
+        # print(agent.actorMain.get_weights()[0])
+        print(
+            f"total reward after {episode} steps is {score}")
+
+    utils.plotReward(episodeAvgScore)
+    utils.plotQ(agent, tf.constant([[1, 0]], dtype=tf.float32))
 
 
 if __name__ == "__main__":

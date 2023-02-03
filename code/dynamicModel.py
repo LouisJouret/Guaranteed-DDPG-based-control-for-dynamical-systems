@@ -6,6 +6,7 @@
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import tensorflow as tf
+import math
 
 
 class doubleIntegrator():
@@ -22,7 +23,7 @@ class doubleIntegrator():
         self.uy = tf.constant(0, dtype=tf.float32)
         self.t = 0
         self.dt = 0.1
-        self.maxTime = 5
+        self.maxTime = 10
         self.state = tf.constant(
             [[x0, y0, 0, 0]], dtype=tf.float32)
         self.A = tf.constant([[1, 0, self.dt, 0],
@@ -55,15 +56,14 @@ class doubleIntegrator():
         # self.render()
 
     def get_reward(self):
-        reward = 0
-        if abs(self.x - self.goal_x) < self.successThreshold and abs(self.y - self.goal_y) < self.successThreshold:
+        if abs(self.state[0][0] - self.goal_x) < self.successThreshold and abs(self.state[0][1] - self.goal_y) < self.successThreshold:
             if self.t == 0:
-                return reward
-            reward += 100
-            reward += 20*(self.maxTime / self.t)
+                return 0
+            return 100
+            # reward += (self.maxTime / self.t)
         elif self.t >= self.maxTime:
-            reward -= (self.x - self.goal_x)**2 + (self.y - self.goal_y)**2
-        return tf.constant(reward, dtype=tf.float32)
+            return (-math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2))
+        return 0
 
     def check_done(self):
 

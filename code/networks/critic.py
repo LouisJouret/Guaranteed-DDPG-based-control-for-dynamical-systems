@@ -4,9 +4,10 @@
 # https://opensource.org/licenses/MIT
 
 import tensorflow as tf
-from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import Dense, Concatenate
 from tensorflow.python.keras import Model
 from networks.actor import Actor
+import math
 
 
 class Critic(Model):
@@ -21,12 +22,19 @@ class Critic(Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a sigmoid output"
-        self.l1 = Dense(self.layer1Dim, activation='relu')
-        self.l2 = Dense(self.layer2Dim, activation='relu')
-        self.lq = Dense(1, activation='linear')
+        initializer = tf.keras.initializers.RandomNormal(
+            mean=0.0, stddev=math.sqrt(2/(self.actionDim + self.stateDim + 1))/10)
+        self.lconcat = Concatenate()
+        self.l1 = Dense(self.layer1Dim, activation='relu',
+                        kernel_initializer=initializer, kernel_regularizer='l1_l2')
+        self.l2 = Dense(self.layer2Dim, activation='relu',
+                        kernel_initializer=initializer, kernel_regularizer='l1_l2')
+        self.lq = Dense(1, activation='tanh', kernel_initializer=initializer,
+                        kernel_regularizer='l1_l2')
 
     def call(self, state, action):
-        x = self.l1(tf.concat([state, action], axis=1))
+        x = self.lconcat([state, action])
+        x = self.l1(x)
         x = self.l2(x)
         x = self.lq(x)
         return x

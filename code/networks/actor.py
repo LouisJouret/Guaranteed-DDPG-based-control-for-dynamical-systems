@@ -6,6 +6,7 @@
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras import Model
+import math
 
 
 class Actor(Model):
@@ -19,9 +20,15 @@ class Actor(Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a sigmoid output"
-        self.l1 = Dense(self.layer1Dim, activation='relu')
-        self.l2 = Dense(self.layer2Dim, activation='relu')
-        self.lAct = Dense(self.actionDim, activation='linear')
+        # initializer = tf.keras.initializers.GlorotNormal()
+        initializer = tf.keras.initializers.RandomNormal(
+            mean=0.0, stddev=math.sqrt(2/(self.actionDim + self.stateDim))/10)
+        self.l1 = Dense(self.layer1Dim, activation='relu',
+                        use_bias=True, kernel_initializer=initializer, kernel_regularizer='l1_l2')
+        self.l2 = Dense(self.layer2Dim, activation='relu',
+                        use_bias=True, kernel_initializer=initializer, kernel_regularizer='l1_l2')
+        self.lAct = Dense(self.actionDim, activation='tanh',
+                          use_bias=True, kernel_initializer=initializer, kernel_regularizer='l1_l2')
 
     def call(self, state):
         x = self.l1(state)
