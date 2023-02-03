@@ -28,10 +28,10 @@ class Agent():
         self.minAction = -1
         self.maxAction = 1
         self.gamma = 0.99
-        self.tau = 0.005
+        self.tau = 0.05
 
-        self.batchSize = 10
-        self.maxBufferSize = 1000
+        self.batchSize = 100
+        self.maxBufferSize = 100
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
                                     statedim=self.actorMain.stateDim,
@@ -74,8 +74,7 @@ class Agent():
             criticLoss = tf.keras.losses.MSE(qBellman, qCritic)
 
             newActions = self.actorMain(nextStates)
-            actorLoss = -self.criticMain(nextStates, newActions)  # minus!
-            actorLoss = tf.math.reduce_mean(actorLoss)
+            actorLoss = self.criticMain(nextStates, newActions)  # minus!
 
         grads1 = tape1.gradient(
             actorLoss, self.actorMain.trainable_variables)

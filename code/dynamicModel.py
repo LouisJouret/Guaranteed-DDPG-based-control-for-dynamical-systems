@@ -23,7 +23,8 @@ class doubleIntegrator():
         self.t = 0
         self.dt = 0.1
         self.maxTime = 5
-        self.buffer = []
+        self.state = tf.constant(
+            [[x0, y0, 0, 0]], dtype=tf.float32)
         self.A = tf.constant([[1, 0, self.dt, 0],
                               [0, 1, 0, self.dt],
                               [0, 0, 1, 0],
@@ -37,15 +38,10 @@ class doubleIntegrator():
     def step(self, state, action):
         x_new = tf.linalg.matvec(self.A, state) + \
             tf.linalg.matvec(self.B, action)
-        self.x = x_new[0]
-        self.y = x_new[1]
-        self.vx = x_new[2]
-        self.vy = x_new[3]
         done = self.check_done()
         reward = self.get_reward()
-        self.buffer.append([self.x, self.y, self.vx, self.vy])
         self.t += self.dt
-
+        self.state = x_new
         return x_new, reward, done
 
     def reset(self):
@@ -57,28 +53,6 @@ class doubleIntegrator():
         self.uy = 0
         self.t = 0
         # self.render()
-        self.buffer = []
-
-    def get_state(self):
-        return [self.x, self.y, self.vx, self.vy]
-
-    def get_time(self):
-        return self.t
-
-    def get_position(self):
-        return [self.x, self.y]
-
-    def get_velocity(self):
-        return [self.vx, self.vy]
-
-    def get_time_step(self):
-        return self.dt
-
-    def get_state_size(self):
-        return 4
-
-    def get_action_size(self):
-        return 2
 
     def get_reward(self):
         reward = 0
@@ -88,7 +62,7 @@ class doubleIntegrator():
             reward += 100
             reward += 20*(self.maxTime / self.t)
         elif self.t >= self.maxTime:
-            reward -= (self.x - self.goal_x)**2 + (self.y - self.goal_y)
+            reward -= (self.x - self.goal_x)**2 + (self.y - self.goal_y)**2
         return tf.constant(reward, dtype=tf.float32)
 
     def check_done(self):
@@ -119,5 +93,5 @@ class doubleIntegrator():
                           self.successThreshold, color='blue')
         ax.add_patch(goal)
         anim = animation.FuncAnimation(
-            fig, animate, frames=round(len(self.buffer)/speed_up), repeat=False)
+            fig, animate, frames=round(len(self.Rbuffer)/speed_up), repeat=False)
         plt.show()
