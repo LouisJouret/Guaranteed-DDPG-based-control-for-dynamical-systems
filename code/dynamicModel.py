@@ -34,7 +34,7 @@ class doubleIntegrator():
                               [0, 0],
                               [self.dt, 0],
                               [0, self.dt]], dtype=tf.float32)
-        self.successThreshold = 0.5
+        self.successThreshold = 1.0
 
     def step(self, state, action):
         x_new = tf.linalg.matvec(self.A, state) + \
@@ -57,20 +57,22 @@ class doubleIntegrator():
 
     def get_reward(self):
         if self.check_done():
-            if abs(self.state[0][0] - self.goal_x) < self.successThreshold and abs(self.state[0][1] - self.goal_y) < self.successThreshold:
+            if math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2) < self.successThreshold:
                 if self.t == 0:
                     return 0
-                return 100
-                # reward += (self.maxTime / self.t)
-            # elif self.t >= self.maxTime:
-            #     return (-math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2))
-        return (-math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2))/10
+                else:
+                    return 100
+            elif abs(self.state[0][0]) > 5 or abs(self.state[0][1]) > 5:
+                return -100
+        return 0
 
     def check_done(self):
 
         if abs(self.x - self.goal_x) < self.successThreshold and abs(self.y - self.goal_y) < self.successThreshold:
             return tf.constant(1, dtype=tf.float32)
         elif self.t > self.maxTime:
+            return tf.constant(1, dtype=tf.float32)
+        elif abs(self.state[0][0]) > 5 or abs(self.state[0][1]) > 5:
             return tf.constant(1, dtype=tf.float32)
         else:
             return tf.constant(0, dtype=tf.float32)
@@ -81,18 +83,24 @@ class doubleIntegrator():
         ax.set_ylim(bottom=-5, top=5)
         ax.set_aspect('equal', adjustable='box')
         speed_up = 2
-        FRAMES_NUMBER = round(len(self.buffer)/speed_up)
+        buffer = []
+        FRAMES_NUMBER = round(len(buffer)/speed_up)
+        self.reset()
 
         def animate(frame):
             if frame == FRAMES_NUMBER-1:
                 plt.close()
             else:
-                ax.plot(self.buffer[speed_up*frame][0],
-                        self.buffer[speed_up*frame][1], 'ro')
+                action = tf.constant([[1, 0]], dtype=tf.float32)
+                x_new = self.step(self.state, action)
+                self.state = x_new
+                buffer.append(self.state)
 
         goal = plt.Circle((self.goal_x, self.goal_y),
                           self.successThreshold, color='blue')
         ax.add_patch(goal)
+
         anim = animation.FuncAnimation(
-            fig, animate, frames=round(len(self.Rbuffer)/speed_up), repeat=False)
+            fig, animate, frames=round(len(buffer)/speed_up), repeat=False)
         plt.show()
+        plt.close()
