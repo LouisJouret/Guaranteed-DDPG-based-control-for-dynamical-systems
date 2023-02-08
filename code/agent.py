@@ -118,14 +118,7 @@ class Agent():
 
     def save(self):
         print('Saving models...')
-        self.actorMain.save_weights('./models/actor')
-        self.actorTarget.save_weights('./models/actor_target')
-        self.criticMain.save_weights('./models/critic')
-        self.criticTarget.save_weights('./models/critic_target')
-
-    def load(self):
-        print('Loading models...')
-        self.actorMain.load_weights('./models/actor.h5')
-        self.actorTarget.load_weights('./models/actor_target.h5')
-        self.criticMain.load_weights('./models/critic.h5')
-        self.criticTarget.load_weights('./models/critic_target.h5')
+        self.actorMain.save_weights('models/actor.h5')
+        self.actorTarget.save_weights('models/actor_target.h5')
+        self.criticMain.save_weights('models/critic.h5')
+        self.criticTarget.save_weights('models/critic_target.h5')

@@ -9,23 +9,23 @@ from agent import Agent
 import tensorflow as tf
 import utils
 import gym
-from test_models import test
+from test_models import animate
 
 
 # tf.random.set_seed(165835)
 # env = gym.make('')
 system = doubleIntegrator(-2, -3, 4.5, 4)
 agent = Agent()
-episodes = 300
+episodes = 1000
 movAvglength = 50
 episodeScore = []
 episodeAvgScore = []
 lastAvg = 0
 best = -1000
-testing = True
+testing = False
 
 if testing:
-    test(agent)
+    animate(agent)
 else:
     for episode in range(episodes):
         done = False
