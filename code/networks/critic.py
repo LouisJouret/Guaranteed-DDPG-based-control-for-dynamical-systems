@@ -5,11 +5,11 @@
 
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense, Concatenate
-from tensorflow.python.keras import Model
+import keras
 
 
-class Critic(Model):
-    def __init__(self, stateDim, actionDim, layer1Dim=10, layer2Dim=10):
+class Critic(keras.Model):
+    def __init__(self, stateDim, actionDim, layer1Dim=512, layer2Dim=512):
         super().__init__()
         self.stateDim = stateDim
         self.actionDim = actionDim
@@ -19,20 +19,15 @@ class Critic(Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a sigmoid output"
-        initializer = tf.keras.initializers.GlorotNormal()
-        # initializer = tf.keras.initializers.RandomNormal(
-        #     mean=0.0, stddev=math.sqrt(2/(self.actionDim + self.stateDim + 1))/10, seed=154765)
-        self.lconcat = Concatenate(axis=1)
-        self.l1 = Dense(self.layer1Dim, activation='relu',
-                        kernel_initializer=initializer)  # kernel_regularizer='l1_l2')
-        self.l2 = Dense(self.layer2Dim, activation='relu',
-                        kernel_initializer=initializer)  # kernel_regularizer='l1_l2')
-        self.lq = Dense(1, activation='tanh', kernel_initializer=initializer)
-        # kernel_regularizer='l1_l2')
+        # initializer = tf.keras.initializers.GlorotNormal(seed=165835)
+        self.l1 = Dense(
+            self.layer1Dim, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
+        self.l2 = Dense(
+            self.layer2Dim, activation=tf.keras.layers.LeakyReLU(alpha=0.01))
+        self.lq = Dense(1, activation=None)
 
-    def call(self, state, action):
-        x = self.lconcat([state, action])
-        x = self.l1(x)
+    def __call__(self, state, action):
+        x = self.l1(tf.concat([state, action], axis=1))
         x = self.l2(x)
         x = self.lq(x)
-        return tf.squeeze(x, 1)
+        return x

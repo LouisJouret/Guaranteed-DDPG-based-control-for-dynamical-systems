@@ -10,28 +10,31 @@ class RBuffer():
     def __init__(self, maxsize, statedim, naction):
         self.cnt = 0
         self.maxsize = maxsize
-        self.state_memory = np.zeros((maxsize, statedim), dtype=np.float32)
-        self.action_memory = np.zeros((maxsize, naction), dtype=np.float32)
-        self.reward_memory = np.zeros((maxsize,), dtype=np.float32)
-        self.next_state_memory = np.zeros(
-            (maxsize, statedim), dtype=np.float32)
-        self.done_memory = np.zeros((maxsize,), dtype=np.bool)
+        self.state_memory = np.zeros((self.maxsize, *statedim))
+        self.next_state_memory = np.zeros((self.maxsize, *statedim))
+        self.action_memory = np.zeros((self.maxsize, naction))
+        self.reward_memory = np.zeros(self.maxsize)
+        self.done_memory = np.zeros(self.maxsize, dtype=np.bool)
 
     def storexp(self, state, action, reward, done, next_state):
         index = self.cnt % self.maxsize
+
         self.state_memory[index] = state
+        self.next_state_memory[index] = next_state
         self.action_memory[index] = action
         self.reward_memory[index] = reward
-        self.next_state_memory[index] = next_state
-        self.done_memory[index] = 1 - int(done)
+        self.done_memory[index] = done
+
         self.cnt += 1
 
     def sample(self, batch_size):
-        max_mem = min(self.cnt+1, self.maxsize)
-        batch = np.random.choice(max_mem, batch_size, replace=False)
+        currentmaxSize = min(self.cnt, self.maxsize)
+
+        batch = np.random.choice(currentmaxSize, batch_size, replace=False)
+
         states = self.state_memory[batch]
         next_states = self.next_state_memory[batch]
-        rewards = self.reward_memory[batch]
         actions = self.action_memory[batch]
+        rewards = self.reward_memory[batch]
         dones = self.done_memory[batch]
         return states, actions, rewards, dones, next_states
