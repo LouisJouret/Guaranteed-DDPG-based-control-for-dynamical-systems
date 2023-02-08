@@ -12,11 +12,13 @@ from keras.optimizers import Adam
 import numpy as np
 import keras
 
+import json
+
 
 class Agent():
     def __init__(self) -> None:
-        self.actionDim = 1
-        self.stateDim = 3
+        self.actionDim = 2
+        self.stateDim = (4,)
         self.actorMain = Actor(self.stateDim, self.actionDim,
                                layer1Dim=512, layer2Dim=512)
         self.actorTarget = Actor(self.stateDim, self.actionDim,
@@ -39,7 +41,7 @@ class Agent():
             np.zeros(self.actionDim), np.array([0.05] * self.actionDim))
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
-                                    statedim=(self.actorMain.stateDim,),
+                                    statedim=self.actorMain.stateDim,
                                     naction=self.actorMain.actionDim)
 
         self.actorTarget.compile(optimizer=self.actorOptimizer)
@@ -52,10 +54,10 @@ class Agent():
 
     def act(self, state):
         actions = self.actorMain(state)
-        # actions += self.ounoise()
-        actions += tf.random.normal(shape=[self.actionDim],
-                                    mean=0.0, stddev=0.05)
-        actions = tf.clip_by_value(actions, -2, 2)
+        actions += self.ounoise()
+        # actions += tf.random.normal(shape=[self.actionDim],
+        #                             mean=0.0, stddev=0.05)
+        actions = tf.clip_by_value(actions, -1, 1)
         return actions
 
     def updateActorTarget(self, tau):
@@ -88,7 +90,7 @@ class Agent():
         rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
         actions = tf.convert_to_tensor(actions, dtype=tf.float32)
 
-        actions = tf.reshape(actions, (self.batchSize, 1))
+        actions = tf.reshape(actions, (self.batchSize, self.actionDim))
         with tf.GradientTape() as tape1:
             actionNext = self.actorTarget(nextStates)
             qNext = tf.squeeze(self.criticTarget(nextStates, actionNext))
@@ -113,3 +115,17 @@ class Agent():
 
         self.updateActorTarget(self.tau)
         self.updateCriticTarget(self.tau)
+
+    def save(self):
+        print('Saving models...')
+        self.actorMain.save_weights('./models/actor')
+        self.actorTarget.save_weights('./models/actor_target')
+        self.criticMain.save_weights('./models/critic')
+        self.criticTarget.save_weights('./models/critic_target')
+
+    def load(self):
+        print('Loading models...')
+        self.actorMain.load_weights('./models/actor.h5')
+        self.actorTarget.load_weights('./models/actor_target.h5')
+        self.criticMain.load_weights('./models/critic.h5')
+        self.criticTarget.load_weights('./models/critic_target.h5')

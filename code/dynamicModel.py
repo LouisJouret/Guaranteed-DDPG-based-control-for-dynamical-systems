@@ -5,7 +5,7 @@
 
 import matplotlib.pyplot as plt
 from matplotlib import animation
-import tensorflow as tf
+import numpy as np
 import math
 
 
@@ -15,43 +15,33 @@ class doubleIntegrator():
         self.y0 = y0
         self.goal_x = goal_x
         self.goal_y = goal_y
-        self.x = tf.constant(x0, dtype=tf.float32)
-        self.y = tf.constant(y0, dtype=tf.float32)
-        self.vx = tf.constant(0, dtype=tf.float32)
-        self.vy = tf.constant(0, dtype=tf.float32)
-        self.ux = tf.constant(0, dtype=tf.float32)
-        self.uy = tf.constant(0, dtype=tf.float32)
         self.t = 0
         self.dt = 0.1
         self.maxTime = 10
-        self.state = tf.constant(
-            [[x0, y0, 0, 0]], dtype=tf.float32)
-        self.A = tf.constant([[1, 0, self.dt, 0],
-                              [0, 1, 0, self.dt],
-                              [0, 0, 1, 0],
-                              [0, 0, 0, 1]], dtype=tf.float32)
-        self.B = tf.constant([[0, 0],
-                              [0, 0],
-                              [self.dt, 0],
-                              [0, self.dt]], dtype=tf.float32)
+        self.state = np.array([[x0, y0, 0, 0]], dtype=np.float32)
+
+        self.A = np.array([[1, 0, self.dt, 0],
+                          [0, 1, 0, self.dt],
+                          [0, 0, 1, 0],
+                          [0, 0, 0, 1]], dtype=np.float32)
+        self.B = np.array([[0, 0],
+                          [0, 0],
+                          [self.dt, 0],
+                          [0, self.dt]], dtype=np.float32)
         self.successThreshold = 1.0
 
     def step(self, state, action):
-        x_new = tf.linalg.matvec(self.A, state) + \
-            tf.linalg.matvec(self.B, action)
+        x_new = np.matmul(self.A, np.squeeze(state)) +\
+            np.matmul(self.B, np.squeeze(action))
         done = self.check_done()
         reward = self.get_reward()
         self.t += self.dt
-        self.state = x_new
+        self.state = np.array([x_new], dtype=np.float32)
+
         return x_new, reward, done
 
     def reset(self):
-        self.x = tf.constant(self.x0)
-        self.y = tf.constant(self.y0)
-        self.vx = 0
-        self.vy = 0
-        self.ux = 0
-        self.uy = 0
+        self.state = np.array([[self.x0, self.y0, 0, 0]], dtype=np.float32)
         self.t = 0
         # self.render()
 
@@ -68,39 +58,11 @@ class doubleIntegrator():
 
     def check_done(self):
 
-        if abs(self.x - self.goal_x) < self.successThreshold and abs(self.y - self.goal_y) < self.successThreshold:
-            return tf.constant(1, dtype=tf.float32)
+        if abs(self.state[0][0] - self.goal_x) < self.successThreshold and abs(self.state[0][1] - self.goal_y) < self.successThreshold:
+            return 1
         elif self.t > self.maxTime:
-            return tf.constant(1, dtype=tf.float32)
+            return 1
         elif abs(self.state[0][0]) > 5 or abs(self.state[0][1]) > 5:
-            return tf.constant(1, dtype=tf.float32)
+            return 1
         else:
-            return tf.constant(0, dtype=tf.float32)
-
-    def render(self):
-        fig, ax = plt.subplots()
-        ax.set_xlim(left=-5, right=5)
-        ax.set_ylim(bottom=-5, top=5)
-        ax.set_aspect('equal', adjustable='box')
-        speed_up = 2
-        buffer = []
-        FRAMES_NUMBER = round(len(buffer)/speed_up)
-        self.reset()
-
-        def animate(frame):
-            if frame == FRAMES_NUMBER-1:
-                plt.close()
-            else:
-                action = tf.constant([[1, 0]], dtype=tf.float32)
-                x_new = self.step(self.state, action)
-                self.state = x_new
-                buffer.append(self.state)
-
-        goal = plt.Circle((self.goal_x, self.goal_y),
-                          self.successThreshold, color='blue')
-        ax.add_patch(goal)
-
-        anim = animation.FuncAnimation(
-            fig, animate, frames=round(len(buffer)/speed_up), repeat=False)
-        plt.show()
-        plt.close()
+            return 0
