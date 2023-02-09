@@ -12,11 +12,12 @@ import gym
 from test_models import animate
 from gymEnv import Mouse
 
+# initialize a seed
+tf.random.set_seed(0)
 
-# tf.random.set_seed(165835)
-env = Mouse()
-agent = Agent()
-episodes = 1000
+env = Mouse(initState=[-2, -3, 0, 0], goal=[2, 2])
+agent = Agent(len(env.actions), len(env.observations))
+episodes = 300
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
@@ -31,7 +32,6 @@ else:
         done = False
         score = 0
         observation = env.reset()
-        cnt = 0
         while not done:
             env.render()
             action = agent.act(np.array([observation]))

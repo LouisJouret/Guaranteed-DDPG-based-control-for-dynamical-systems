@@ -14,9 +14,9 @@ import keras
 
 
 class Agent():
-    def __init__(self) -> None:
-        self.actionDim = 2
-        self.stateDim = (4,)
+    def __init__(self, num_actions, num_states) -> None:
+        self.actionDim = num_actions
+        self.stateDim = (num_states,)
         self.actorMain = Actor(self.stateDim, self.actionDim,
                                layer1Dim=512, layer2Dim=512)
         self.actorTarget = Actor(self.stateDim, self.actionDim,
@@ -36,7 +36,7 @@ class Agent():
         self.maxBufferSize = 1000000
 
         self.ounoise = OhrsteinUhlenbeckNoise(
-            np.zeros(self.actionDim), np.array([0.05] * self.actionDim))
+            np.zeros(self.actionDim), np.array([0.1] * self.actionDim))
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
                                     statedim=self.actorMain.stateDim,
@@ -87,8 +87,15 @@ class Agent():
         nextStates = tf.convert_to_tensor(nextStates, dtype=tf.float32)
         rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
         actions = tf.convert_to_tensor(actions, dtype=tf.float32)
+        dones = tf.convert_to_tensor(dones, dtype=tf.float32)
 
         actions = tf.reshape(actions, (self.batchSize, self.actionDim))
+
+        self.backprop(states, actions, rewards, dones, nextStates)
+
+    @tf.function
+    def backprop(self, states, actions, rewards, dones, nextStates):
+
         with tf.GradientTape() as tape1:
             actionNext = self.actorTarget(nextStates)
             qNext = tf.squeeze(self.criticTarget(nextStates, actionNext))

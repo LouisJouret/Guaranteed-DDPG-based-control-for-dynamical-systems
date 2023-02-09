@@ -16,6 +16,7 @@ class Mouse(gym.Env):
 
     def __init__(self, render_mode="human", max_steps=1000, initState=[0, 0, 0, 0], goal=[2, 2]):
         self.window_size = 512
+        self.factor = self.window_size / 10
         self.mouse = doubleIntegrator(
             initState[0], initState[1], goal[0], goal[1])
 
@@ -36,10 +37,11 @@ class Mouse(gym.Env):
         self.actions = ["vertical_force", "horizontal_force"]
 
         self.observations = ['x', 'y', 'vx', 'vy']
-        low = np.array(-1)
-        high = np.array(1)
+
+        low = np.array(-1, dtype=np.float32)
+        high = np.array(1, dtype=np.float32)
         self.action_space = spaces.Box(
-            low=low, high=high, dtype=np.float32)
+            low=low, high=high)
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -118,29 +120,47 @@ class Mouse(gym.Env):
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
+            pygame.display.set_caption('MouseCheese')
             self.window = pygame.display.set_mode(
                 (self.window_size, self.window_size))
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
 
         canvas = pygame.Surface((self.window_size, self.window_size))
-        canvas.fill((255, 255, 255))
-        factor = self.window_size / 10
+        canvas.fill((243, 237, 202))
 
         pygame.draw.circle(
             canvas,
-            (0, 255, 0),
-            (int(factor * self.goal['x'] + self.window_size/2),
-             int(factor * self.goal['y'] + self.window_size/2)),
-            int(factor * 0.5)
+            (145, 22, 253),
+            (int(self.factor * self.goal['x'] + self.window_size/2),
+             int(self.factor * self.goal['y'] + self.window_size/2)),
+            int(self.factor * self.mouse.successThreshold)
         )
 
-        pygame.draw.circle(
+        # pygame.draw.circle(
+        #     canvas,
+        #     (0, 0, 255),
+        #     (int(factor * self.state['x'] + self.window_size/2),
+        #      int(factor * self.state['y'] + self.window_size/2)),
+        #     int(factor * 0.2)
+        # )
+
+        # get tilt of triangle from velocity
+        triangle_size = 0.5
+        vx = self.state['vx']
+        vy = self.state['vy']
+        if vx == 0 and vy == 0:
+            angle = 0
+        else:
+            angle = np.arctan2(vy, vx)
+            if angle < 0:
+                angle += 2 * np.pi
+
+        point_x, point_y, point_z = self.compute_triangle(angle, triangle_size)
+        pygame.draw.polygon(
             canvas,
-            (0, 0, 255),
-            (int(factor * self.state['x'] + self.window_size/2),
-             int(factor * self.state['y'] + self.window_size/2)),
-            int(factor * 0.2)
+            (134, 16, 3),
+            [point_x, point_y, point_z]
         )
 
         if self.render_mode == "human":
@@ -156,6 +176,25 @@ class Mouse(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
+
+    def compute_triangle(self, angle, size=1):
+        R = np.array([[np.cos(angle), -np.sin(angle)],
+                      [np.sin(angle), np.cos(angle)]])
+        vec_1 = size*np.array([1, 0])
+        vec_2 = size*np.array([-0.5, 0.5])
+        vec_3 = size*np.array([-0.5, -0.5])
+
+        rot_point_1 = np.dot(R, vec_1)
+        rot_point_2 = np.dot(R, vec_2)
+        rot_point_3 = np.dot(R, vec_3)
+
+        point_x = (int(self.window_size/2 + self.factor*(self.state['x'] + rot_point_1[0])),
+                   int(self.window_size/2 + self.factor*(self.state['y'] + rot_point_1[1])))
+        point_y = (int(self.window_size/2 + self.factor*(self.state['x'] + rot_point_2[0])),
+                   int(self.window_size/2 + self.factor*(self.state['y'] + rot_point_2[1])))
+        point_z = (int(self.window_size/2 + self.factor*(self.state['x'] + rot_point_3[0])),
+                   int(self.window_size/2 + self.factor*(self.state['y'] + rot_point_3[1])))
+        return point_x, point_y, point_z
 
     def close(self):
         if self.window is not None:

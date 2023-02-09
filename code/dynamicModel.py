@@ -15,7 +15,7 @@ class doubleIntegrator():
         self.goal_x = goal_x
         self.goal_y = goal_y
         self.t = 0
-        self.dt = 0.1
+        self.dt = 0.05
         self.maxTime = 10
         self.state = np.array([[x0, y0, 0, 0]], dtype=np.float32)
 
@@ -27,7 +27,7 @@ class doubleIntegrator():
                           [0, 0],
                           [self.dt, 0],
                           [0, self.dt]], dtype=np.float32)
-        self.successThreshold = 1.0
+        self.successThreshold = 0.5
 
     def step(self, state, action):
         x_new = np.matmul(self.A, np.squeeze(state)) +\
@@ -46,14 +46,17 @@ class doubleIntegrator():
 
     def get_reward(self):
         if self.check_done():
-            if math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2) < self.successThreshold:
+            if math.sqrt((self.state[0][0] - self.goal_x)**2 + (self.state[0][1] - self.goal_y)**2) < self.successThreshold + 0.01:
                 if self.t == 0:
                     return 0
                 else:
                     return 100
             elif abs(self.state[0][0]) > 5 or abs(self.state[0][1]) > 5:
                 return -100
-        return 0
+            else:
+                return -1
+        else:
+            return -1
 
     def check_done(self):
 
