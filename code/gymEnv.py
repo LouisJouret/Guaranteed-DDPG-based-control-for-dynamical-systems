@@ -12,10 +12,10 @@ from dynamicModel import doubleIntegrator
 
 
 class Mouse(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 25}
 
-    def __init__(self, render_mode=None, max_steps=1000, initState=[0, 0, 0, 0], goal=[2, 2]):
-        self.window_size = 512  # The size of the PyGame window
+    def __init__(self, render_mode="human", max_steps=1000, initState=[0, 0, 0, 0], goal=[2, 2]):
+        self.window_size = 512
         self.mouse = doubleIntegrator(
             initState[0], initState[1], goal[0], goal[1])
 
@@ -85,7 +85,7 @@ class Mouse(gym.Env):
             'vx': self.initState[2],
             'vy': self.initState[3]
         }
-        self.steps_left = self.max_steps
+        self.mouse.reset()
 
         observation = self._get_obs()
 
@@ -108,7 +108,7 @@ class Mouse(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, reward, terminated, False, info
+        return observation, reward, terminated, info
 
     def render(self):
         if self.render_mode == "rgb_array":
@@ -130,14 +130,16 @@ class Mouse(gym.Env):
         pygame.draw.circle(
             canvas,
             (0, 255, 0),
-            (int(factor * self.goal['x']), int(factor * self.goal['y'])),
+            (int(factor * self.goal['x'] + self.window_size/2),
+             int(factor * self.goal['y'] + self.window_size/2)),
             int(factor * 0.5)
         )
 
         pygame.draw.circle(
             canvas,
             (0, 0, 255),
-            (int(factor * self.state['x']), int(factor * self.state['y'])),
+            (int(factor * self.state['x'] + self.window_size/2),
+             int(factor * self.state['y'] + self.window_size/2)),
             int(factor * 0.2)
         )
 
@@ -154,3 +156,8 @@ class Mouse(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
+
+    def close(self):
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()

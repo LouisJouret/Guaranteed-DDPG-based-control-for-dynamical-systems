@@ -14,11 +14,10 @@ from gymEnv import Mouse
 
 
 # tf.random.set_seed(165835)
-# env = gym.make('')
 env = Mouse()
 agent = Agent()
 episodes = 1000
-movAvglength = 50
+movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
 lastAvg = 0
@@ -32,10 +31,10 @@ else:
         done = False
         score = 0
         observation = env.reset()
-        print(observation)
+        cnt = 0
         while not done:
             env.render()
-            action = agent.act(observation)
+            action = agent.act(np.array([observation]))
             nextObservation, reward, done, _ = env.step(action[0])
             agent.replayBuffer.storexp(
                 observation, action, reward, done, nextObservation)
