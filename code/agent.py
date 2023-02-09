@@ -12,8 +12,6 @@ from keras.optimizers import Adam
 import numpy as np
 import keras
 
-import json
-
 
 class Agent():
     def __init__(self) -> None:
@@ -118,7 +116,7 @@ class Agent():
 
     def save(self):
         print('Saving models...')
-        self.actorMain.save_weights('models/actor.h5')
-        self.actorTarget.save_weights('models/actor_target.h5')
-        self.criticMain.save_weights('models/critic.h5')
-        self.criticTarget.save_weights('models/critic_target.h5')
+        self.actorMain.save_weights('code/models/actor.h5')
+        self.actorTarget.save_weights('code/models/actor_target.h5')
+        self.criticMain.save_weights('code/models/critic.h5')
+        self.criticTarget.save_weights('code/models/critic_target.h5')

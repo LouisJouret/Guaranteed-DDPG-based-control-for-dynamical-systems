@@ -10,11 +10,12 @@ import tensorflow as tf
 import utils
 import gym
 from test_models import animate
+from gymEnv import Mouse
 
 
 # tf.random.set_seed(165835)
 # env = gym.make('')
-system = doubleIntegrator(-2, -3, 4.5, 4)
+env = Mouse()
 agent = Agent()
 episodes = 1000
 movAvglength = 50
@@ -30,16 +31,16 @@ else:
     for episode in range(episodes):
         done = False
         score = 0
-        system.reset()
-
+        observation = env.reset()
+        print(observation)
         while not done:
-            observation = system.state
+            env.render()
             action = agent.act(observation)
-            nextObservation, reward, done = system.step(
-                observation, np.array(action))
+            nextObservation, reward, done, _ = env.step(action[0])
             agent.replayBuffer.storexp(
                 observation, action, reward, done, nextObservation)
             agent.train()
+            observation = nextObservation
             score += reward
         episodeScore.append(score)
         if episode > movAvglength:
