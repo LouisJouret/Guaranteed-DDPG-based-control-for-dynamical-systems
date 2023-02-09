@@ -3,7 +3,6 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
 import keras
 

@@ -8,19 +8,34 @@ import gym
 from gym import spaces
 import pygame
 import numpy as np
-from dynamicModel import doubleIntegrator
 
 
 class Mouse(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 25}
 
-    def __init__(self, render_mode="human", max_steps=1000, initState=[0, 0, 0, 0], goal=[2, 2]):
+    def __init__(self, render_mode="human", max_steps=500, initState=[0, 0, 0, 0], goal=[2, 2]):
         self.window_size = 512
-        self.factor = self.window_size / 10
-        self.mouse = doubleIntegrator(
-            initState[0], initState[1], goal[0], goal[1])
+        self.field_limit = [-5, 5]
+        self.successThreshold = 0.5
+        self.factor = self.window_size / \
+            (self.field_limit[1] - self.field_limit[0])
+
+        # self.mouse = doubleIntegrator(
+        #     initState[0], initState[1], goal[0], goal[1])
 
         self.initState = initState
+        self.time = 0
+        self.dt = 0.05
+        self.maxTime = max_steps*self.dt
+
+        self.A = np.array([[1, 0, self.dt, 0],
+                          [0, 1, 0, self.dt],
+                          [0, 0, 1, 0],
+                          [0, 0, 0, 1]], dtype=np.float32)
+        self.B = np.array([[0, 0],
+                          [0, 0],
+                          [self.dt, 0],
+                          [0, self.dt]], dtype=np.float32)
 
         self.state = {
             'x': initState[0],
@@ -87,7 +102,7 @@ class Mouse(gym.Env):
             'vx': self.initState[2],
             'vy': self.initState[3]
         }
-        self.mouse.reset()
+        self.time = 0
 
         observation = self._get_obs()
 
@@ -98,19 +113,50 @@ class Mouse(gym.Env):
 
     def step(self, action):
         state = self._get_obs()
-        observation, reward, terminated = self.mouse.step(state, action)
+        observation = np.matmul(self.A, np.squeeze(state)) +\
+            np.matmul(self.B, np.squeeze(action))
+        terminated = self.check_done()
+        reward = self.get_reward()
+        self.time += self.dt
+
         self.state = {
             'x': observation[0],
             'y': observation[1],
             'vx': observation[2],
             'vy': observation[3],
         }
+
         info = self._get_info()
+        self.time += self.dt
 
         if self.render_mode == "human":
             self._render_frame()
 
         return observation, reward, terminated, info
+
+    def get_reward(self):
+        if self.check_done():
+            if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
+                if self.time == 0:
+                    return 0
+                else:
+                    return 100
+            elif abs(self.state['x']) > 5 or abs(self.state['y']) > 5:
+                return -100
+            else:
+                return -1
+        else:
+            return -1
+
+    def check_done(self):
+        if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
+            return 1
+        elif self.time > self.maxTime:
+            return 1
+        elif abs(self.state['x']) > 5 or abs(self.state['y']) > 5:
+            return 1
+        else:
+            return 0
 
     def render(self):
         if self.render_mode == "rgb_array":
@@ -134,7 +180,7 @@ class Mouse(gym.Env):
             (145, 22, 253),
             (int(self.factor * self.goal['x'] + self.window_size/2),
              int(self.factor * self.goal['y'] + self.window_size/2)),
-            int(self.factor * self.mouse.successThreshold)
+            int(self.factor * self.successThreshold)
         )
 
         # pygame.draw.circle(
