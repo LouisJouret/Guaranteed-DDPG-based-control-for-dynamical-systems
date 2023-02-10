@@ -14,7 +14,7 @@ tf.random.set_seed(1)
 
 env = Mouse(initState=[-2, -3, 0, 0], goal=[2, 2])
 agent = Agent(len(env.actions), len(env.observations))
-episodes = 300
+episodes = 1000
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []

@@ -58,6 +58,9 @@ class Mouse(gym.Env):
         self.action_space = spaces.Box(
             low=low, high=high)
 
+        self.first_run = True
+        self.obstacle_set = []
+
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
@@ -155,8 +158,14 @@ class Mouse(gym.Env):
             return 1
         elif abs(self.state['x']) > 5 or abs(self.state['y']) > 5:
             return 1
+        elif self.pos_to_pixel([self.state['x'], self.state['y']]) in self.obstacle_set:
+            return 1
         else:
             return 0
+
+    def pos_to_pixel(self, pos):
+        return (int(pos[0] * self.factor + self.window_size / 2),
+                int(pos[1] * self.factor + self.window_size / 2))
 
     def render(self):
         if self.render_mode == "rgb_array":
@@ -183,31 +192,13 @@ class Mouse(gym.Env):
             int(self.factor * self.successThreshold)
         )
 
-        # pygame.draw.circle(
-        #     canvas,
-        #     (0, 0, 255),
-        #     (int(factor * self.state['x'] + self.window_size/2),
-        #      int(factor * self.state['y'] + self.window_size/2)),
-        #     int(factor * 0.2)
-        # )
+        self.bean_obstacle(canvas)
+        self.plotMouse(canvas)
 
-        # get tilt of triangle from velocity
-        triangle_size = 0.5
-        vx = self.state['vx']
-        vy = self.state['vy']
-        if vx == 0 and vy == 0:
-            angle = 0
-        else:
-            angle = np.arctan2(vy, vx)
-            if angle < 0:
-                angle += 2 * np.pi
-
-        point_x, point_y, point_z = self.compute_triangle(angle, triangle_size)
-        pygame.draw.polygon(
-            canvas,
-            (134, 16, 3),
-            [point_x, point_y, point_z]
-        )
+        if self.first_run:
+            self.obstacle_set = self.get_obstacle_set(canvas)
+            print(self.obstacle_set)
+            self.first_run = False
 
         if self.render_mode == "human":
             # The following line copies our drawings from `canvas` to the visible window
@@ -242,7 +233,97 @@ class Mouse(gym.Env):
                    int(self.window_size/2 + self.factor*(self.state['y'] + rot_point_3[1])))
         return point_x, point_y, point_z
 
+    def plotMouse(self, canvas):
+        # get tilt of triangle from velocity
+        triangle_size = 0.5
+        vx = self.state['vx']
+        vy = self.state['vy']
+        if vx == 0 and vy == 0:
+            angle = 0
+        else:
+            angle = np.arctan2(vy, vx)
+            if angle < 0:
+                angle += 2 * np.pi
+
+        point_x, point_y, point_z = self.compute_triangle(angle, triangle_size)
+        pygame.draw.polygon(
+            canvas,
+            (134, 16, 3),
+            [point_x, point_y, point_z]
+        )
+
     def close(self):
         if self.window is not None:
             pygame.display.quit()
             pygame.quit()
+
+    def bean_obstacle(self, canvas):
+        """ Draws a bean obstacle"""
+        p1 = (0, 0)
+        p2 = (-1, 1)
+        p3 = (-1, 3)
+        p4 = (1, 2)
+        p5 = (2, 0)
+        p6 = (1, -2)
+        p7 = (-1, -3)
+        p8 = (-2, -2)
+        p9 = (-1, -1)
+        p1_out = (self.window_size/2 + self.factor*p1[0],
+                  self.window_size/2 + self.factor*p1[1])
+        p2_out = (self.window_size/2 + self.factor*p2[0],
+                  self.window_size/2 + self.factor*p2[1])
+        p3_out = (self.window_size/2 + self.factor*p3[0],
+                  self.window_size/2 + self.factor*p3[1])
+        p4_out = (self.window_size/2 + self.factor*p4[0],
+                  self.window_size/2 + self.factor*p4[1])
+        p5_out = (self.window_size/2 + self.factor*p5[0],
+                  self.window_size/2 + self.factor*p5[1])
+        p6_out = (self.window_size/2 + self.factor*p6[0],
+                  self.window_size/2 + self.factor*p6[1])
+        p7_out = (self.window_size/2 + self.factor*p7[0],
+                  self.window_size/2 + self.factor*p7[1])
+        p8_out = (self.window_size/2 + self.factor*p8[0],
+                  self.window_size/2 + self.factor*p8[1])
+        p9_out = (self.window_size/2 + self.factor*p9[0],
+                  self.window_size/2 + self.factor*p9[1])
+        points_out = [p1_out, p2_out, p3_out, p4_out,
+                      p5_out, p6_out, p7_out, p8_out, p9_out]
+        pygame.draw.polygon(
+            canvas,
+            (0, 0, 0),  # use black for the obstacle
+            points_out
+        )
+        p1_inner = (self.window_size/2 + 0.85*self.factor*p1[0],
+                    self.window_size/2 + 0.85*self.factor*p1[1])
+        p2_inner = (self.window_size/2 + 0.85*self.factor*p2[0],
+                    self.window_size/2 + 0.85*self.factor*p2[1])
+        p3_inner = (self.window_size/2 + 0.85*self.factor*p3[0],
+                    self.window_size/2 + 0.85*self.factor*p3[1])
+        p4_inner = (self.window_size/2 + 0.85*self.factor*p4[0],
+                    self.window_size/2 + 0.85*self.factor*p4[1])
+        p5_inner = (self.window_size/2 + 0.85*self.factor*p5[0],
+                    self.window_size/2 + 0.85*self.factor*p5[1])
+        p6_inner = (self.window_size/2 + 0.85*self.factor*p6[0],
+                    self.window_size/2 + 0.85*self.factor*p6[1])
+        p7_inner = (self.window_size/2 + 0.85*self.factor*p7[0],
+                    self.window_size/2 + 0.85*self.factor*p7[1])
+        p8_inner = (self.window_size/2 + 0.85*self.factor*p8[0],
+                    self.window_size/2 + 0.85*self.factor*p8[1])
+        p9_inner = (self.window_size/2 + 0.85*self.factor*p9[0],
+                    self.window_size/2 + 0.85*self.factor*p9[1])
+        points_inner = [p1_inner, p2_inner, p3_inner, p4_inner,
+                        p5_inner, p6_inner, p7_inner, p8_inner, p9_inner]
+        pygame.draw.polygon(
+            canvas,
+            (243, 237, 202),  # remove inner part of the bean
+            points_inner
+        )
+
+    def get_obstacle_set(self, canvas):
+        """ get the set of pixels which are colored by the obstacle method"""
+        obstacle_set = []
+        for pixel_x in range(self.window_size):
+            for pixel_y in range(self.window_size):
+                if canvas.get_at((pixel_x, pixel_y)) == (0, 0, 0):
+                    obstacle_set.append((pixel_x, pixel_y))
+        return obstacle_set
