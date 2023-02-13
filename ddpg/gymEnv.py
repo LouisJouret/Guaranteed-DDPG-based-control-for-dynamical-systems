@@ -115,6 +115,7 @@ class Mouse(gym.Env):
         return observation
 
     def step(self, action):
+        self.action = action
         state = self._get_obs()
         observation = np.matmul(self.A, np.squeeze(state)) +\
             np.matmul(self.B, np.squeeze(action))
@@ -132,8 +133,8 @@ class Mouse(gym.Env):
         info = self._get_info()
         self.time += self.dt
 
-        if self.render_mode == "human":
-            self._render_frame()
+        # if self.render_mode == "human":
+        #     self._render_frame()
 
         return observation, reward, terminated, info
 
@@ -144,12 +145,12 @@ class Mouse(gym.Env):
                     return 0
                 else:
                     return 100
-            elif abs(self.state['x']) > 5 or abs(self.state['y']) > 5:
+            elif abs(self.state['x']) >= 5 or abs(self.state['y']) >= 5:
                 return -100
             else:
-                return -1
+                return - np.sqrt(self.action[0]**2 + self.action[1]**2)
         else:
-            return -1
+            return - np.sqrt(self.action[0]**2 + self.action[1]**2)
 
     def check_done(self):
         if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
@@ -167,8 +168,15 @@ class Mouse(gym.Env):
         return (int(pos[0] * self.factor + self.window_size / 2),
                 int(pos[1] * self.factor + self.window_size / 2))
 
+    def drawCircle(self, canvas, pos, color, radius):
+        pygame.draw.circle(
+            canvas,
+            color,
+            self.pos_to_pixel(pos),
+            radius)
+
     def render(self):
-        if self.render_mode == "rgb_array":
+        if self.render_mode == "human":
             return self._render_frame()
 
     def _render_frame(self):
@@ -184,20 +192,17 @@ class Mouse(gym.Env):
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((243, 237, 202))
 
-        pygame.draw.circle(
-            canvas,
-            (145, 22, 253),
-            (int(self.factor * self.goal['x'] + self.window_size/2),
-             int(self.factor * self.goal['y'] + self.window_size/2)),
-            int(self.factor * self.successThreshold)
-        )
+        self.drawCircle(
+            canvas, (self.goal['x'], self.goal['y']), (145, 22, 253), int(self.factor * self.successThreshold))
+
+        self.drawCircle(
+            canvas, (-1, 0), (0, 0, 0), 50)
 
         self.bean_obstacle(canvas)
         self.plotMouse(canvas)
 
         if self.first_run:
             self.obstacle_set = self.get_obstacle_set(canvas)
-            print(self.obstacle_set)
             self.first_run = False
 
         if self.render_mode == "human":
@@ -260,64 +265,62 @@ class Mouse(gym.Env):
     def bean_obstacle(self, canvas):
         """ Draws a bean obstacle"""
         p1 = (0, 0)
-        p2 = (-1, 1)
+        p2 = (-2, 2)
         p3 = (-1, 3)
         p4 = (1, 2)
         p5 = (2, 0)
         p6 = (1, -2)
         p7 = (-1, -3)
         p8 = (-2, -2)
-        p9 = (-1, -1)
-        p1_out = (self.window_size/2 + self.factor*p1[0],
-                  self.window_size/2 + self.factor*p1[1])
-        p2_out = (self.window_size/2 + self.factor*p2[0],
-                  self.window_size/2 + self.factor*p2[1])
-        p3_out = (self.window_size/2 + self.factor*p3[0],
-                  self.window_size/2 + self.factor*p3[1])
-        p4_out = (self.window_size/2 + self.factor*p4[0],
-                  self.window_size/2 + self.factor*p4[1])
-        p5_out = (self.window_size/2 + self.factor*p5[0],
-                  self.window_size/2 + self.factor*p5[1])
-        p6_out = (self.window_size/2 + self.factor*p6[0],
-                  self.window_size/2 + self.factor*p6[1])
-        p7_out = (self.window_size/2 + self.factor*p7[0],
-                  self.window_size/2 + self.factor*p7[1])
-        p8_out = (self.window_size/2 + self.factor*p8[0],
-                  self.window_size/2 + self.factor*p8[1])
-        p9_out = (self.window_size/2 + self.factor*p9[0],
-                  self.window_size/2 + self.factor*p9[1])
+        offset = 80
+        p1_out = (self.window_size/2 + 0.5*self.factor*p1[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p1[1])
+        p2_out = (self.window_size/2 + 0.5*self.factor*p2[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p2[1])
+        p3_out = (self.window_size/2 + 0.5*self.factor*p3[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p3[1])
+        p4_out = (self.window_size/2 + 0.5*self.factor*p4[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p4[1])
+        p5_out = (self.window_size/2 + 0.5*self.factor*p5[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p5[1])
+        p6_out = (self.window_size/2 + 0.5*self.factor*p6[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p6[1])
+        p7_out = (self.window_size/2 + 0.5*self.factor*p7[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p7[1])
+        p8_out = (self.window_size/2 + 0.5*self.factor*p8[0] + offset,
+                  self.window_size/2 + 0.5*self.factor*p8[1])
         points_out = [p1_out, p2_out, p3_out, p4_out,
-                      p5_out, p6_out, p7_out, p8_out, p9_out]
+                      p5_out, p6_out, p7_out, p8_out]
         pygame.draw.polygon(
             canvas,
             (0, 0, 0),  # use black for the obstacle
             points_out
         )
-        p1_inner = (self.window_size/2 + 0.85*self.factor*p1[0],
-                    self.window_size/2 + 0.85*self.factor*p1[1])
-        p2_inner = (self.window_size/2 + 0.85*self.factor*p2[0],
-                    self.window_size/2 + 0.85*self.factor*p2[1])
-        p3_inner = (self.window_size/2 + 0.85*self.factor*p3[0],
-                    self.window_size/2 + 0.85*self.factor*p3[1])
-        p4_inner = (self.window_size/2 + 0.85*self.factor*p4[0],
-                    self.window_size/2 + 0.85*self.factor*p4[1])
-        p5_inner = (self.window_size/2 + 0.85*self.factor*p5[0],
-                    self.window_size/2 + 0.85*self.factor*p5[1])
-        p6_inner = (self.window_size/2 + 0.85*self.factor*p6[0],
-                    self.window_size/2 + 0.85*self.factor*p6[1])
-        p7_inner = (self.window_size/2 + 0.85*self.factor*p7[0],
-                    self.window_size/2 + 0.85*self.factor*p7[1])
-        p8_inner = (self.window_size/2 + 0.85*self.factor*p8[0],
-                    self.window_size/2 + 0.85*self.factor*p8[1])
-        p9_inner = (self.window_size/2 + 0.85*self.factor*p9[0],
-                    self.window_size/2 + 0.85*self.factor*p9[1])
-        points_inner = [p1_inner, p2_inner, p3_inner, p4_inner,
-                        p5_inner, p6_inner, p7_inner, p8_inner, p9_inner]
-        pygame.draw.polygon(
-            canvas,
-            (243, 237, 202),  # remove inner part of the bean
-            points_inner
-        )
+        # p1_inner = (self.window_size/2 + 0.85*self.factor*p1[0],
+        #             self.window_size/2 + 0.85*self.factor*p1[1])
+        # p2_inner = (self.window_size/2 + 0.85*self.factor*p2[0],
+        #             self.window_size/2 + 0.85*self.factor*p2[1])
+        # p3_inner = (self.window_size/2 + 0.85*self.factor*p3[0],
+        #             self.window_size/2 + 0.85*self.factor*p3[1])
+        # p4_inner = (self.window_size/2 + 0.85*self.factor*p4[0],
+        #             self.window_size/2 + 0.85*self.factor*p4[1])
+        # p5_inner = (self.window_size/2 + 0.85*self.factor*p5[0],
+        #             self.window_size/2 + 0.85*self.factor*p5[1])
+        # p6_inner = (self.window_size/2 + 0.85*self.factor*p6[0],
+        #             self.window_size/2 + 0.85*self.factor*p6[1])
+        # p7_inner = (self.window_size/2 + 0.85*self.factor*p7[0],
+        #             self.window_size/2 + 0.85*self.factor*p7[1])
+        # p8_inner = (self.window_size/2 + 0.85*self.factor*p8[0],
+        #             self.window_size/2 + 0.85*self.factor*p8[1])
+        # p9_inner = (self.window_size/2 + 0.85*self.factor*p9[0],
+        #             self.window_size/2 + 0.85*self.factor*p9[1])
+        # points_inner = [p1_inner, p2_inner, p3_inner, p4_inner,
+        #                 p5_inner, p6_inner, p7_inner, p8_inner, p9_inner]
+        # pygame.draw.polygon(
+        #     canvas,
+        #     (243, 237, 202),  # remove inner part of the bean
+        #     points_inner
+        # )
 
     def get_obstacle_set(self, canvas):
         """ get the set of pixels which are colored by the obstacle method"""

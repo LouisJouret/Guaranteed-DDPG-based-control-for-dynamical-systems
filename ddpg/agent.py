@@ -36,7 +36,7 @@ class Agent():
         self.maxBufferSize = 1000000
 
         self.ounoise = OhrsteinUhlenbeckNoise(
-            np.zeros(self.actionDim), np.array([0.1] * self.actionDim))
+            np.zeros(self.actionDim), np.array([0.2] * self.actionDim))
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
                                     statedim=self.actorMain.stateDim,
@@ -123,7 +123,7 @@ class Agent():
 
     def save(self):
         print('Saving models...')
-        self.actorMain.save_weights('code/models/actor.h5')
-        self.actorTarget.save_weights('code/models/actor_target.h5')
-        self.criticMain.save_weights('code/models/critic.h5')
-        self.criticTarget.save_weights('code/models/critic_target.h5')
+        self.actorMain.save_weights('ddpg/models/actor.h5')
+        self.actorTarget.save_weights('ddpg/models/actor_target.h5')
+        self.criticMain.save_weights('ddpg/models/critic.h5')
+        self.criticTarget.save_weights('ddpg/models/critic_target.h5')
