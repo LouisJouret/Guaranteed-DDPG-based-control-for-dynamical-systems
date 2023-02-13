@@ -10,10 +10,7 @@ import utils
 from gymEnv import Mouse
 import gym
 
-tf.random.set_seed(543653)
-
-# env = Mouse(initState=[-2, -3, 0, 0], goal=[2, 2])
-env = gym.make('Pendulum-v0')
+env = Mouse(initState=[-2, -3, 0, 0], goal=[2, 2])
 agent = Agent(env.action_space.shape[0], env.observation_space.shape[0])
 episodes = 400
 movAvglength = 100

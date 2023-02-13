@@ -19,10 +19,12 @@ class Actor(keras.Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a custom piece-wise linear output"
+        # use xavier initialization
+        initializer = tf.keras.initializers.GlorotNormal()
         self.l1 = Dense(self.layer1Dim, activation='relu',
-                        kernel_regularizer='l1_l2')
+                        kernel_regularizer='l1_l2', kernel_initializer=initializer)
         self.l2 = Dense(self.layer2Dim, activation='relu',
-                        kernel_regularizer='l1_l2')
+                        kernel_regularizer='l1_l2', kernel_initializer=initializer)
         self.l3 = PLULayer(self.actionDim)
 
     def __call__(self, state):
@@ -38,10 +40,11 @@ class PLULayer(tf.keras.layers.Layer):
         self.num_outputs = num_outputs
 
     def build(self, input_shape):
+        intializer = tf.keras.initializers.GlorotNormal()
         self.kernel = self.add_weight("kernel",
                                       shape=[int(input_shape[-1]),
                                              self.num_outputs],
-                                      regularizer=tf.keras.regularizers.l1_l2())
+                                      regularizer=tf.keras.regularizers.l1_l2(), initializer=intializer)
 
     def call(self, x):
         x = tf.matmul(x, self.kernel)
