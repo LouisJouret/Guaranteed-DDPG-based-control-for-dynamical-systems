@@ -27,6 +27,8 @@ class Mouse(gym.Env):
         self.time = 0
         self.dt = 0.05
         self.maxTime = max_steps*self.dt
+        self.timePenalty = 0.2
+        self.actionPenalty = 1
 
         self.A = np.array([[1, 0, self.dt, 0],
                           [0, 1, 0, self.dt],
@@ -139,18 +141,23 @@ class Mouse(gym.Env):
         return observation, reward, terminated, info
 
     def get_reward(self):
+        actionAmplitude = np.sqrt(self.action[0]**2 + self.action[1]**2)
+        distFromGoal = np.sqrt(
+            (self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2)
+
         if self.check_done():
-            if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
+            if distFromGoal <= self.successThreshold:
                 if self.time == 0:
                     return 0
                 else:
-                    return 100
-            elif abs(self.state['x']) >= 5 or abs(self.state['y']) >= 5:
-                return -100
+                    return 100  # - self.actionPenalty * actionAmplitude
+            elif not (self.field_limit[0] < self.state['x'] < self.field_limit[1]) or \
+                    not (self.field_limit[0] < self.state['y'] < self.field_limit[1]):
+                return -100  # - self.actionPenalty * actionAmplitude
             else:
-                return - np.sqrt(self.action[0]**2 + self.action[1]**2)
+                return 0  # - self.timePenalty  # - self.actionPenalty * actionAmplitude
         else:
-            return - np.sqrt(self.action[0]**2 + self.action[1]**2)
+            return 0  # - self.timePenalty  # - self.actionPenalty * actionAmplitude
 
     def check_done(self):
         if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
@@ -195,10 +202,10 @@ class Mouse(gym.Env):
         self.drawCircle(
             canvas, (self.goal['x'], self.goal['y']), (145, 22, 253), int(self.factor * self.successThreshold))
 
-        self.drawCircle(
-            canvas, (-1, 0), (0, 0, 0), 50)
+        # self.drawCircle(
+        #     canvas, (-1, 0), (0, 0, 0), 50)
 
-        self.bean_obstacle(canvas)
+        # self.bean_obstacle(canvas)
         self.plotMouse(canvas)
 
         if self.first_run:

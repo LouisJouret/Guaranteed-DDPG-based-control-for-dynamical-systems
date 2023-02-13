@@ -7,7 +7,6 @@ import tensorflow as tf
 from networks.actor import Actor
 from networks.critic import Critic
 from buffer import RBuffer
-from noise import OhrsteinUhlenbeckNoise
 from keras.optimizers import Adam
 import numpy as np
 import keras
@@ -17,14 +16,10 @@ class Agent():
     def __init__(self, num_actions, num_states) -> None:
         self.actionDim = num_actions
         self.stateDim = (num_states,)
-        self.actorMain = Actor(self.stateDim, self.actionDim,
-                               layer1Dim=512, layer2Dim=512)
-        self.actorTarget = Actor(self.stateDim, self.actionDim,
-                                 layer1Dim=512, layer2Dim=512)
-        self.criticMain = Critic(self.stateDim, 1,
-                                 layer1Dim=512, layer2Dim=512)
-        self.criticTarget = Critic(self.stateDim, 1,
-                                   layer1Dim=512, layer2Dim=512)
+        self.actorMain = Actor(self.stateDim, self.actionDim, 512, 512)
+        self.actorTarget = Actor(self.stateDim, self.actionDim, 512, 512)
+        self.criticMain = Critic(self.stateDim, 1, 512, 512)
+        self.criticTarget = Critic(self.stateDim, 1, 512, 512)
 
         self.actorOptimizer = Adam(learning_rate=1e-3)
         self.criticOptimizer = Adam(learning_rate=2e-3)
@@ -33,10 +28,7 @@ class Agent():
         self.tau = 0.005
 
         self.batchSize = 64
-        self.maxBufferSize = 1000000
-
-        self.ounoise = OhrsteinUhlenbeckNoise(
-            np.zeros(self.actionDim), np.array([0.2] * self.actionDim))
+        self.maxBufferSize = 10000
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
                                     statedim=self.actorMain.stateDim,
@@ -52,9 +44,8 @@ class Agent():
 
     def act(self, state):
         actions = self.actorMain(state)
-        actions += self.ounoise()
-        # actions += tf.random.normal(shape=[self.actionDim],
-        #                             mean=0.0, stddev=0.05)
+        actions += tf.random.normal(shape=[self.actionDim],
+                                    mean=0.0, stddev=0.05)
         actions = tf.clip_by_value(actions, -1, 1)
         return actions
 
@@ -93,6 +84,9 @@ class Agent():
 
         self.backprop(states, actions, rewards, dones, nextStates)
 
+        self.updateActorTarget(self.tau)
+        self.updateCriticTarget(self.tau)
+
     @tf.function
     def backprop(self, states, actions, rewards, dones, nextStates):
 
@@ -117,9 +111,6 @@ class Agent():
             actorLoss, self.actorMain.trainable_variables)
         self.actorOptimizer.apply_gradients(
             zip(gradsActor, self.actorMain.trainable_variables))
-
-        self.updateActorTarget(self.tau)
-        self.updateCriticTarget(self.tau)
 
     def save(self):
         print('Saving models...')

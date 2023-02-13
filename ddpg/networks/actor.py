@@ -18,13 +18,12 @@ class Actor(keras.Model):
         self.createModel()
 
     def createModel(self):
-        "creates keras model of 2 dense layers followed by a sigmoid output"
-        # initializer = tf.keras.initializers.GlorotNormal(seed=165835)
+        "creates keras model of 2 dense layers followed by a custom piece-wise linear output"
         self.l1 = Dense(self.layer1Dim, activation='relu',
                         kernel_regularizer='l1_l2')
         self.l2 = Dense(self.layer2Dim, activation='relu',
                         kernel_regularizer='l1_l2')
-        self.l3 = CustomLayer(self.actionDim)
+        self.l3 = PLULayer(self.actionDim)
 
     def __call__(self, state):
         x = self.l1(state)
@@ -33,7 +32,7 @@ class Actor(keras.Model):
         return x
 
 
-class CustomLayer(tf.keras.layers.Layer):
+class PLULayer(tf.keras.layers.Layer):
     def __init__(self, num_outputs=2):
         super().__init__()
         self.num_outputs = num_outputs
@@ -41,32 +40,37 @@ class CustomLayer(tf.keras.layers.Layer):
     def build(self, input_shape):
         self.kernel = self.add_weight("kernel",
                                       shape=[int(input_shape[-1]),
-                                             self.num_outputs])
+                                             self.num_outputs],
+                                      regularizer=tf.keras.regularizers.l1_l2())
 
     def call(self, x):
         x = tf.matmul(x, self.kernel)
         return pieceWiseLinear(x)
-        # bool_up = tf.cast(x > 1, dtype=tf.bool)
-        # bool_down = tf.cast(x < -1, dtype=tf.bool)
-        # x = tf.where(bool_up, x, 0.001*x + 0.999)
-        # x = tf.where(bool_down, x, 0.001*x - 0.999)
-        # return x
 
 
 @tf.custom_gradient
 def pieceWiseLinear(x):
-    bool_up = tf.cast(x > 1, dtype=tf.bool)
-    bool_down = tf.cast(x < -1, dtype=tf.bool)
-    x = tf.where(bool_up, x, 0.001*x + 0.999)
-    x = tf.where(bool_down, x, 0.001*x - 0.999)
+    stability = tf.cast(abs(x) > 1000, dtype=tf.bool)
+    x = tf.where(stability, x, 1000)
+    bool_up_flat = tf.cast(x > 1, dtype=tf.bool)
+    bool_down_flat = tf.cast(x < -1, dtype=tf.bool)
+    bool_up_semi = tf.cast(x > 0.5, dtype=tf.bool)
+    bool_down_semi = tf.cast(x < -0.5, dtype=tf.bool)
+    x = tf.where(bool_up_flat, x, 0.0001*x + 0.9999)
+    x = tf.where(bool_down_flat, x, 0.0001*x - 0.9999)
+    x = tf.where(bool_up_semi, x, 0.5*x + 0.25)
+    x = tf.where(bool_down_semi, x, 0.5*x - 0.25)
 
     def grad(dx):
-        bool_up = tf.cast(dx > 1, dtype=tf.bool)
-        bool_down = tf.cast(dx < -1, dtype=tf.bool)
+        bool_up_flat = tf.cast(dx > 1, dtype=tf.bool)
+        bool_down_flat = tf.cast(dx < -1, dtype=tf.bool)
+        bool_up_semi = tf.cast(x > 0.5, dtype=tf.bool)
+        bool_down_semi = tf.cast(x < -0.5, dtype=tf.bool)
         grad_dx = tf.ones(dx.shape)
-        print(bool_up)
-        grad_dx = tf.where(bool_up, grad_dx, 0.001)
-        grad_dx = tf.where(bool_down, grad_dx, 0.001)
+        grad_dx = tf.where(bool_up_flat, grad_dx, 0.0001)
+        grad_dx = tf.where(bool_down_flat, grad_dx, 0.0001)
+        grad_dx = tf.where(bool_up_semi, grad_dx, 0.5)
+        grad_dx = tf.where(bool_down_semi, grad_dx, 0.5)
         return dx * grad_dx
 
     return x, grad

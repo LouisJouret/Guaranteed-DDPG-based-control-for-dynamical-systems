@@ -8,13 +8,14 @@ from agent import Agent
 import tensorflow as tf
 import utils
 from gymEnv import Mouse
+import gym
 
-# initialize a seed
 tf.random.set_seed(543653)
 
-env = Mouse(initState=[-2, -3, 0, 0], goal=[2, 2])
-agent = Agent(len(env.actions), len(env.observations))
-episodes = 2000
+# env = Mouse(initState=[-2, -3, 0, 0], goal=[2, 2])
+env = gym.make('Pendulum-v0')
+agent = Agent(env.action_space.shape[0], env.observation_space.shape[0])
+episodes = 400
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
@@ -27,8 +28,7 @@ for episode in range(episodes):
     score = 0
     observation = env.reset()
     while not done:
-        if episode > 3*episodes/4:
-            env.render()
+        # env.render()
         action = agent.act(np.array([observation]))
         nextObservation, reward, done, _ = env.step(action[0])
         agent.replayBuffer.storexp(

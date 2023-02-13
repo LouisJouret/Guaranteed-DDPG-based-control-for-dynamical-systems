@@ -19,7 +19,6 @@ class Critic(keras.Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a sigmoid output"
-        # initializer = tf.keras.initializers.GlorotNormal(seed=165835)
         self.l1 = Dense(
             self.layer1Dim, activation='relu', kernel_regularizer='l1_l2')
         self.l2 = Dense(
