@@ -5,14 +5,15 @@
 
 import numpy as np
 from agent import Agent
-import tensorflow as tf
 import utils
 from gymEnv import Mouse
 import gym
 
-env = Mouse(initState=[-2, -3, 0, 0], goal=[2, 2])
-agent = Agent(env.action_space.shape[0], env.observation_space.shape[0])
-episodes = 400
+# env = gym.make('Pendulum-v0')
+# agent = Agent(env.action_space.shape[0], env.observation_space.shape[0])
+env = Mouse()
+agent = Agent(len(env.actions), len(env.observations))
+episodes = 1000
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
@@ -25,7 +26,7 @@ for episode in range(episodes):
     score = 0
     observation = env.reset()
     while not done:
-        # env.render()
+        env.render()
         action = agent.act(np.array([observation]))
         nextObservation, reward, done, _ = env.step(action[0])
         agent.replayBuffer.storexp(
@@ -44,5 +45,9 @@ for episode in range(episodes):
     if best < avg:
         agent.save()
         best = avg
+
+    if episode % 50 == 0:
+        utils.plotQ(agent)
+        utils.plotAction(agent)
 
 utils.plotReward(episodeAvgScore)

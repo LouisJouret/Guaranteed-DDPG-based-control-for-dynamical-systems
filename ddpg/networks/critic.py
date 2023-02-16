@@ -4,7 +4,7 @@
 # https://opensource.org/licenses/MIT
 
 import tensorflow as tf
-from tensorflow.python.keras.layers import Dense, Concatenate
+from tensorflow.python.keras.layers import Dense
 import keras
 
 
@@ -19,11 +19,14 @@ class Critic(keras.Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a sigmoid output"
+        initializer = tf.keras.initializers.RandomUniform(
+            minval=-0.01, maxval=0.01)
         self.l1 = Dense(
-            self.layer1Dim, activation='relu', kernel_regularizer='l1_l2')
+            self.layer1Dim, activation='relu', kernel_regularizer='l1_l2', kernel_initializer=initializer)
         self.l2 = Dense(
-            self.layer2Dim, activation='relu', kernel_regularizer='l1_l2')
-        self.lq = Dense(1, activation=None)
+            self.layer2Dim, activation='relu', kernel_regularizer='l1_l2', kernel_initializer=initializer)
+        self.lq = Dense(
+            1, activation=None, kernel_regularizer='l1_l2', kernel_initializer=initializer)
 
     def __call__(self, state, action):
         x = self.l1(tf.concat([state, action], axis=1))

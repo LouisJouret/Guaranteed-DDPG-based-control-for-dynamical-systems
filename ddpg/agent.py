@@ -8,7 +8,6 @@ from networks.actor import Actor
 from networks.critic import Critic
 from buffer import RBuffer
 from keras.optimizers import Adam
-import numpy as np
 import keras
 
 
@@ -16,19 +15,19 @@ class Agent():
     def __init__(self, num_actions, num_states) -> None:
         self.actionDim = num_actions
         self.stateDim = (num_states,)
-        self.actorMain = Actor(self.stateDim, self.actionDim, 512, 512)
-        self.actorTarget = Actor(self.stateDim, self.actionDim, 512, 512)
+        self.actorMain = Actor(self.stateDim, self.actionDim, 32, 32)
+        self.actorTarget = Actor(self.stateDim, self.actionDim, 32, 32)
         self.criticMain = Critic(self.stateDim, 1, 512, 512)
         self.criticTarget = Critic(self.stateDim, 1, 512, 512)
 
-        self.actorOptimizer = Adam(learning_rate=1e-3)
-        self.criticOptimizer = Adam(learning_rate=2e-3)
+        self.actorOptimizer = Adam(learning_rate=1e-4)
+        self.criticOptimizer = Adam(learning_rate=1e-4)
 
-        self.gamma = 0.99
+        self.gamma = 0.999
         self.tau = 0.005
 
         self.batchSize = 64
-        self.maxBufferSize = 10000
+        self.maxBufferSize = 100000
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
                                     statedim=self.actorMain.stateDim,
@@ -56,7 +55,6 @@ class Agent():
             weights.append(tau * weight + (1-tau)
                            * target_weights[i])
             target_weights[i].assign(weights[i])
-        # tf.numpy_function(self.target_actor.set_weights, tf.Variable(weights), tf.float32)
 
     def updateCriticTarget(self, tau):
         weights = []
@@ -65,7 +63,6 @@ class Agent():
             weights.append(tau * weight + (1-tau)
                            * target_weights[i])
             target_weights[i].assign(weights[i])
-        # tf.numpy_function(self.target_critic.set_weights, tf.Varibale(weights), tf.float32)
 
     def train(self):
         if self.replayBuffer.cnt < self.batchSize:

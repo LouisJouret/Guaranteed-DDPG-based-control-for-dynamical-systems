@@ -15,20 +15,23 @@ class Mouse(gym.Env):
 
     def __init__(self, render_mode="human", max_steps=500, initState=[0, 0, 0, 0], goal=[2, 2]):
         self.window_size = 512
-        self.field_limit = [-5, 5]
+        self.field_limit = [-5.1, 5.1]
         self.successThreshold = 0.5
         self.factor = self.window_size / \
             (self.field_limit[1] - self.field_limit[0])
 
-        # self.mouse = doubleIntegrator(
-        #     initState[0], initState[1], goal[0], goal[1])
-
         self.initState = initState
         self.time = 0
-        self.dt = 0.05
+        self.dt = 0.1
         self.maxTime = max_steps*self.dt
-        self.timePenalty = 0.2
+        self.timePenalty = 10
         self.actionPenalty = 1
+        self.distancePenalty = 100
+
+        self.obstacle_color = (100, 0, 0)
+        self.goal_color = (0, 200, 100)
+        self.mouse_color = (80, 70, 255)
+        self.background_color = (245, 240, 200)
 
         self.A = np.array([[1, 0, self.dt, 0],
                           [0, 1, 0, self.dt],
@@ -50,6 +53,7 @@ class Mouse(gym.Env):
             'y': goal[1]
         }
         self.max_steps = max_steps
+        self.history = []
 
         self.actions = ["vertical_force", "horizontal_force"]
 
@@ -100,7 +104,11 @@ class Mouse(gym.Env):
 
     def reset(self):
         # super().reset(seed=seed)
+        self.history = []
+        x0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
+        y0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
 
+        self.initState = np.array([x0, y0, 0, 0])
         self.state = {
             'x': self.initState[0],
             'y': self.initState[1],
@@ -132,6 +140,8 @@ class Mouse(gym.Env):
             'vy': observation[3],
         }
 
+        self.history.append(observation)
+
         info = self._get_info()
         self.time += self.dt
 
@@ -150,14 +160,19 @@ class Mouse(gym.Env):
                 if self.time == 0:
                     return 0
                 else:
-                    return 100  # - self.actionPenalty * actionAmplitude
-            elif not (self.field_limit[0] < self.state['x'] < self.field_limit[1]) or \
-                    not (self.field_limit[0] < self.state['y'] < self.field_limit[1]):
-                return -100  # - self.actionPenalty * actionAmplitude
+                    return 1000
+            # elif not (self.field_limit[0] < self.state['x'] < self.field_limit[1]) or \
+            #         not (self.field_limit[0] < self.state['y'] < self.field_limit[1]):
+            #     # - self.distancePenalty*distFromGoal
+            #     return -300 - self.actionPenalty * actionAmplitude
+            elif self.time > self.maxTime:
+                # - self.distancePenalty * distFromGoal
+                return - self.actionPenalty * actionAmplitude
             else:
-                return 0  # - self.timePenalty  # - self.actionPenalty * actionAmplitude
+                return -300 - self.actionPenalty * actionAmplitude
         else:
-            return 0  # - self.timePenalty  # - self.actionPenalty * actionAmplitude
+            # - self.distancePenalty * distFromGoal
+            return - self.actionPenalty * actionAmplitude
 
     def check_done(self):
         if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
@@ -173,14 +188,7 @@ class Mouse(gym.Env):
 
     def pos_to_pixel(self, pos):
         return (int(pos[0] * self.factor + self.window_size / 2),
-                int(pos[1] * self.factor + self.window_size / 2))
-
-    def drawCircle(self, canvas, pos, color, radius):
-        pygame.draw.circle(
-            canvas,
-            color,
-            self.pos_to_pixel(pos),
-            radius)
+                -int(pos[1] * self.factor - self.window_size / 2))
 
     def render(self):
         if self.render_mode == "human":
@@ -197,15 +205,39 @@ class Mouse(gym.Env):
             self.clock = pygame.time.Clock()
 
         canvas = pygame.Surface((self.window_size, self.window_size))
-        canvas.fill((243, 237, 202))
+        canvas.fill(self.obstacle_color)
 
-        self.drawCircle(
-            canvas, (self.goal['x'], self.goal['y']), (145, 22, 253), int(self.factor * self.successThreshold))
+        pygame.draw.rect(canvas,
+                         self.background_color,
+                         pygame.Rect(
+                             self.factor*0.1,
+                             self.factor*0.1,
+                             self.window_size - self.factor*0.2,
+                             self.window_size - self.factor*0.2))
 
-        # self.drawCircle(
-        #     canvas, (-1, 0), (0, 0, 0), 50)
+        # goal
+        pygame.draw.circle(
+            canvas,
+            self.goal_color,
+            self.pos_to_pixel([self.goal['x'], self.goal['y']]),
+            int(self.factor * self.successThreshold))
 
-        # self.bean_obstacle(canvas)
+        # initial state
+        pygame.draw.circle(
+            canvas,
+            self.mouse_color,
+            self.pos_to_pixel([self.initState[0], self.initState[1]]),
+            int(self.factor * 0.2))
+
+        # history of states
+        for state in self.history:
+            pygame.draw.circle(
+                canvas,
+                self.mouse_color,
+                self.pos_to_pixel([state[0], state[1]]),
+                int(self.factor * 0.05))
+
+        self.multiple_small_polytope(canvas)
         self.plotMouse(canvas)
 
         if self.first_run:
@@ -226,9 +258,9 @@ class Mouse(gym.Env):
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
 
-    def compute_triangle(self, angle, size=1):
-        R = np.array([[np.cos(angle), -np.sin(angle)],
-                      [np.sin(angle), np.cos(angle)]])
+    def compute_mouse_points(self, angle, size=1):
+        R = self.rotation_matrix(angle)
+
         vec_1 = size*np.array([1, 0])
         vec_2 = size*np.array([-0.5, 0.5])
         vec_3 = size*np.array([-0.5, -0.5])
@@ -237,12 +269,12 @@ class Mouse(gym.Env):
         rot_point_2 = np.dot(R, vec_2)
         rot_point_3 = np.dot(R, vec_3)
 
-        point_x = (int(self.window_size/2 + self.factor*(self.state['x'] + rot_point_1[0])),
-                   int(self.window_size/2 + self.factor*(self.state['y'] + rot_point_1[1])))
-        point_y = (int(self.window_size/2 + self.factor*(self.state['x'] + rot_point_2[0])),
-                   int(self.window_size/2 + self.factor*(self.state['y'] + rot_point_2[1])))
-        point_z = (int(self.window_size/2 + self.factor*(self.state['x'] + rot_point_3[0])),
-                   int(self.window_size/2 + self.factor*(self.state['y'] + rot_point_3[1])))
+        point_x = (self.state['x'] + rot_point_1[0],
+                   self.state['y'] + rot_point_1[1])
+        point_y = (self.state['x'] + rot_point_2[0],
+                   self.state['y'] + rot_point_2[1])
+        point_z = (self.state['x'] + rot_point_3[0],
+                   self.state['y'] + rot_point_3[1])
         return point_x, point_y, point_z
 
     def plotMouse(self, canvas):
@@ -257,10 +289,15 @@ class Mouse(gym.Env):
             if angle < 0:
                 angle += 2 * np.pi
 
-        point_x, point_y, point_z = self.compute_triangle(angle, triangle_size)
+        point_x, point_y, point_z = self.compute_mouse_points(
+            angle, triangle_size)
+        point_x = self.pos_to_pixel(point_x)
+        point_y = self.pos_to_pixel(point_y)
+        point_z = self.pos_to_pixel(point_z)
+
         pygame.draw.polygon(
             canvas,
-            (134, 16, 3),
+            self.mouse_color,
             [point_x, point_y, point_z]
         )
 
@@ -268,6 +305,55 @@ class Mouse(gym.Env):
         if self.window is not None:
             pygame.display.quit()
             pygame.quit()
+
+    def rotation_matrix(self, angle):
+        return np.array([[np.cos(angle), -np.sin(angle)],
+                         [np.sin(angle), np.cos(angle)]])
+
+    def multiple_small_polytope(self, canvas):
+        p1 = [0, 0]
+        p2 = [-2, 2]
+        p3 = [-1, 3]
+
+        offset1 = [1, 1]
+        offset2 = [3, 4]
+        offset3 = [3, 3]
+
+        angle1 = np.deg2rad(35)
+        angle2 = np.deg2rad(75)
+        angle3 = np.deg2rad(140)
+
+        R1 = self.rotation_matrix(angle1)
+        R2 = self.rotation_matrix(angle2)
+        R3 = self.rotation_matrix(angle3)
+
+        p1r1 = self.pos_to_pixel(np.dot(R1, p1) + offset1)
+        p2r1 = self.pos_to_pixel(np.dot(R1, p2) + offset1)
+        p3r1 = self.pos_to_pixel(np.dot(R1, p3) + offset1)
+
+        p1r2 = self.pos_to_pixel(np.dot(R2, p1) + offset2)
+        p2r2 = self.pos_to_pixel(np.dot(R2, p2) + offset2)
+        p3r2 = self.pos_to_pixel(np.dot(R2, p3) + offset2)
+
+        p1r3 = self.pos_to_pixel(np.dot(R3, p1) + offset3)
+        p2r3 = self.pos_to_pixel(np.dot(R3, p2) + offset3)
+        p3r3 = self.pos_to_pixel(np.dot(R3, p3) + offset3)
+
+        pygame.draw.polygon(
+            canvas,
+            self.obstacle_color,
+            [p1r1, p2r1, p3r1]
+        )
+        pygame.draw.polygon(
+            canvas,
+            self.obstacle_color,
+            [p1r2, p2r2, p3r2]
+        )
+        pygame.draw.polygon(
+            canvas,
+            self.obstacle_color,
+            [p1r3, p2r3, p3r3]
+        )
 
     def bean_obstacle(self, canvas):
         """ Draws a bean obstacle"""
@@ -300,40 +386,15 @@ class Mouse(gym.Env):
                       p5_out, p6_out, p7_out, p8_out]
         pygame.draw.polygon(
             canvas,
-            (0, 0, 0),  # use black for the obstacle
+            self.obstacle_color,  # use black for the obstacle
             points_out
         )
-        # p1_inner = (self.window_size/2 + 0.85*self.factor*p1[0],
-        #             self.window_size/2 + 0.85*self.factor*p1[1])
-        # p2_inner = (self.window_size/2 + 0.85*self.factor*p2[0],
-        #             self.window_size/2 + 0.85*self.factor*p2[1])
-        # p3_inner = (self.window_size/2 + 0.85*self.factor*p3[0],
-        #             self.window_size/2 + 0.85*self.factor*p3[1])
-        # p4_inner = (self.window_size/2 + 0.85*self.factor*p4[0],
-        #             self.window_size/2 + 0.85*self.factor*p4[1])
-        # p5_inner = (self.window_size/2 + 0.85*self.factor*p5[0],
-        #             self.window_size/2 + 0.85*self.factor*p5[1])
-        # p6_inner = (self.window_size/2 + 0.85*self.factor*p6[0],
-        #             self.window_size/2 + 0.85*self.factor*p6[1])
-        # p7_inner = (self.window_size/2 + 0.85*self.factor*p7[0],
-        #             self.window_size/2 + 0.85*self.factor*p7[1])
-        # p8_inner = (self.window_size/2 + 0.85*self.factor*p8[0],
-        #             self.window_size/2 + 0.85*self.factor*p8[1])
-        # p9_inner = (self.window_size/2 + 0.85*self.factor*p9[0],
-        #             self.window_size/2 + 0.85*self.factor*p9[1])
-        # points_inner = [p1_inner, p2_inner, p3_inner, p4_inner,
-        #                 p5_inner, p6_inner, p7_inner, p8_inner, p9_inner]
-        # pygame.draw.polygon(
-        #     canvas,
-        #     (243, 237, 202),  # remove inner part of the bean
-        #     points_inner
-        # )
 
     def get_obstacle_set(self, canvas):
         """ get the set of pixels which are colored by the obstacle method"""
         obstacle_set = []
         for pixel_x in range(self.window_size):
             for pixel_y in range(self.window_size):
-                if canvas.get_at((pixel_x, pixel_y)) == (0, 0, 0):
+                if canvas.get_at((pixel_x, pixel_y)) == self.obstacle_color:
                     obstacle_set.append((pixel_x, pixel_y))
         return obstacle_set
