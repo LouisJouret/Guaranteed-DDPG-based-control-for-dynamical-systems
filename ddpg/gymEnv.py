@@ -13,7 +13,7 @@ import numpy as np
 class Mouse(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 25}
 
-    def __init__(self, render_mode="human", max_steps=500, initState=[0, 0, 0, 0], goal=[2, 2]):
+    def __init__(self, render_mode="human", max_steps=500, initState=[-2, -2, 0, 0], goal=[2, 2]):
         self.window_size = 512
         self.field_limit = [-5.1, 5.1]
         self.successThreshold = 0.5
@@ -22,32 +22,48 @@ class Mouse(gym.Env):
 
         self.initState = initState
         self.time = 0
-        self.dt = 0.1
+        self.dt = 0.2
+        self.old_angle = 0
         self.maxTime = max_steps*self.dt
-        self.timePenalty = 10
+        self.timePenalty = 0
         self.actionPenalty = 1
-        self.distancePenalty = 100
+        self.distancePenalty = 0
+        self.punishment_obstacle = -100
+        self.reward_goal = 1000
 
         self.obstacle_color = (100, 0, 0)
         self.goal_color = (0, 200, 100)
         self.mouse_color = (80, 70, 255)
         self.background_color = (245, 240, 200)
 
-        self.A = np.array([[1, 0, self.dt, 0],
-                          [0, 1, 0, self.dt],
-                          [0, 0, 1, 0],
-                          [0, 0, 0, 1]], dtype=np.float32)
-        self.B = np.array([[0, 0],
-                          [0, 0],
-                          [self.dt, 0],
-                          [0, self.dt]], dtype=np.float32)
+        # self.A = np.array([[1, 0, self.dt, 0],
+        #                   [0, 1, 0, self.dt],
+        #                   [0, 0, 1, 0],
+        #                   [0, 0, 0, 1]], dtype=np.float32)
+
+        self.A = np.array([[1, 0],
+                           [0, 1]], dtype=np.float32)
+
+        # self.B = np.array([[0, 0],
+        #                   [0, 0],
+        #                   [self.dt, 0],
+        #                   [0, self.dt]], dtype=np.float32)
+
+        self.B = np.array([[self.dt, 0],
+                           [0, self.dt]], dtype=np.float32)
+
+        # self.state = {
+        #     'x': initState[0],
+        #     'y': initState[1],
+        #     'vx': initState[2],
+        #     'vy': initState[3]
+        # }
 
         self.state = {
             'x': initState[0],
-            'y': initState[1],
-            'vx': initState[2],
-            'vy': initState[3]
+            'y': initState[1]
         }
+
         self.goal = {
             'x': goal[0],
             'y': goal[1]
@@ -57,7 +73,8 @@ class Mouse(gym.Env):
 
         self.actions = ["vertical_force", "horizontal_force"]
 
-        self.observations = ['x', 'y', 'vx', 'vy']
+        # self.observations = ['x', 'y', 'vx', 'vy']
+        self.observations = ['x', 'y']
 
         low = np.array(-1, dtype=np.float32)
         high = np.array(1, dtype=np.float32)
@@ -76,19 +93,20 @@ class Mouse(gym.Env):
         self.clock = None
 
     def make_mouse_obs_space(self):
-        observations = ['x', 'y', 'vx', 'vy']
+        # observations = ['x', 'y', 'vx', 'vy']
+        observations = ['x', 'y']
 
         lower_obs_bound = {
             'x': - np.inf,
             'y': - np.inf,
-            'vx': - np.inf,
-            'vy': - np.inf
+            # 'vx': - np.inf,
+            # 'vy': - np.inf
         }
         higher_obs_bound = {
             'x': np.inf,
             'y': np.inf,
-            'vx': np.inf,
-            'vy': np.inf
+            # 'vx': np.inf,
+            # 'vy': np.inf
         }
 
         low = np.array([lower_obs_bound[obs] for obs in observations])
@@ -105,16 +123,21 @@ class Mouse(gym.Env):
     def reset(self):
         # super().reset(seed=seed)
         self.history = []
-        x0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
-        y0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
+        # x0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
+        # y0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
 
-        self.initState = np.array([x0, y0, 0, 0])
+        # self.initState = np.array([x0, y0, 0, 0])
+        # self.state = {
+        #     'x': self.initState[0],
+        #     'y': self.initState[1],
+        #     'vx': self.initState[2],
+        #     'vy': self.initState[3]
+        # }
         self.state = {
             'x': self.initState[0],
-            'y': self.initState[1],
-            'vx': self.initState[2],
-            'vy': self.initState[3]
+            'y': self.initState[1]
         }
+
         self.time = 0
 
         observation = self._get_obs()
@@ -127,20 +150,23 @@ class Mouse(gym.Env):
     def step(self, action):
         self.action = action
         state = self._get_obs()
+        self.history.append(state)
         observation = np.matmul(self.A, np.squeeze(state)) +\
             np.matmul(self.B, np.squeeze(action))
         terminated = self.check_done()
         reward = self.get_reward()
         self.time += self.dt
 
+        # self.state = {
+        #     'x': observation[0],
+        #     'y': observation[1],
+        #     'vx': observation[2],
+        #     'vy': observation[3],
+        # }
         self.state = {
             'x': observation[0],
-            'y': observation[1],
-            'vx': observation[2],
-            'vy': observation[3],
+            'y': observation[1]
         }
-
-        self.history.append(observation)
 
         info = self._get_info()
         self.time += self.dt
@@ -160,19 +186,14 @@ class Mouse(gym.Env):
                 if self.time == 0:
                     return 0
                 else:
-                    return 1000
-            # elif not (self.field_limit[0] < self.state['x'] < self.field_limit[1]) or \
-            #         not (self.field_limit[0] < self.state['y'] < self.field_limit[1]):
-            #     # - self.distancePenalty*distFromGoal
-            #     return -300 - self.actionPenalty * actionAmplitude
+                    return self.reward_goal
             elif self.time > self.maxTime:
-                # - self.distancePenalty * distFromGoal
-                return - self.actionPenalty * actionAmplitude
+                return -self.distancePenalty*distFromGoal - self.actionPenalty * actionAmplitude
             else:
-                return -300 - self.actionPenalty * actionAmplitude
+                return -self.timePenalty + self.punishment_obstacle -\
+                    self.distancePenalty*distFromGoal - self.actionPenalty * actionAmplitude
         else:
-            # - self.distancePenalty * distFromGoal
-            return - self.actionPenalty * actionAmplitude
+            return -self.timePenalty - self.distancePenalty*distFromGoal - self.actionPenalty * actionAmplitude
 
     def check_done(self):
         if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
@@ -280,15 +301,20 @@ class Mouse(gym.Env):
     def plotMouse(self, canvas):
         # get tilt of triangle from velocity
         triangle_size = 0.5
-        vx = self.state['vx']
-        vy = self.state['vy']
-        if vx == 0 and vy == 0:
-            angle = 0
+        if len(self.history) == 0:
+            new_angle = 0
         else:
-            angle = np.arctan2(vy, vx)
-            if angle < 0:
-                angle += 2 * np.pi
+            vx = self.state['x'] - self.history[-1][0]
+            vy = self.state['y'] - self.history[-1][1]
+            if vx == 0 and vy == 0:
+                new_angle = 0
+            else:
+                new_angle = np.arctan2(vy, vx)
+                if new_angle < 0:
+                    new_angle += 2 * np.pi
 
+        angle = (new_angle + self.old_angle)/2
+        self.old_angle = angle
         point_x, point_y, point_z = self.compute_mouse_points(
             angle, triangle_size)
         point_x = self.pos_to_pixel(point_x)
@@ -339,21 +365,21 @@ class Mouse(gym.Env):
         p2r3 = self.pos_to_pixel(np.dot(R3, p2) + offset3)
         p3r3 = self.pos_to_pixel(np.dot(R3, p3) + offset3)
 
-        pygame.draw.polygon(
-            canvas,
-            self.obstacle_color,
-            [p1r1, p2r1, p3r1]
-        )
-        pygame.draw.polygon(
-            canvas,
-            self.obstacle_color,
-            [p1r2, p2r2, p3r2]
-        )
-        pygame.draw.polygon(
-            canvas,
-            self.obstacle_color,
-            [p1r3, p2r3, p3r3]
-        )
+        # pygame.draw.polygon(
+        #     canvas,
+        #     self.obstacle_color,
+        #     [p1r1, p2r1, p3r1]
+        # )
+        # pygame.draw.polygon(
+        #     canvas,
+        #     self.obstacle_color,
+        #     [p1r2, p2r2, p3r2]
+        # )
+        # pygame.draw.polygon(
+        #     canvas,
+        #     self.obstacle_color,
+        #     [p1r3, p2r3, p3r3]
+        # )
 
     def bean_obstacle(self, canvas):
         """ Draws a bean obstacle"""

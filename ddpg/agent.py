@@ -17,16 +17,16 @@ class Agent():
         self.stateDim = (num_states,)
         self.actorMain = Actor(self.stateDim, self.actionDim, 32, 32)
         self.actorTarget = Actor(self.stateDim, self.actionDim, 32, 32)
-        self.criticMain = Critic(self.stateDim, 1, 512, 512)
-        self.criticTarget = Critic(self.stateDim, 1, 512, 512)
+        self.criticMain = Critic(self.stateDim, 1, 32, 32)
+        self.criticTarget = Critic(self.stateDim, 1, 32, 32)
 
-        self.actorOptimizer = Adam(learning_rate=1e-4)
-        self.criticOptimizer = Adam(learning_rate=1e-4)
+        self.actorOptimizer = Adam(learning_rate=1e-5)
+        self.criticOptimizer = Adam(learning_rate=1e-5)
 
-        self.gamma = 0.999
+        self.gamma = 0.99
         self.tau = 0.005
 
-        self.batchSize = 64
+        self.batchSize = 10000
         self.maxBufferSize = 100000
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
@@ -44,7 +44,7 @@ class Agent():
     def act(self, state):
         actions = self.actorMain(state)
         actions += tf.random.normal(shape=[self.actionDim],
-                                    mean=0.0, stddev=0.05)
+                                    mean=0.0, stddev=0.1)
         actions = tf.clip_by_value(actions, -1, 1)
         return actions
 

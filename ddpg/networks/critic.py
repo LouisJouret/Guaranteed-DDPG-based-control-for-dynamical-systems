@@ -19,17 +19,14 @@ class Critic(keras.Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a sigmoid output"
-        initializer = tf.keras.initializers.RandomUniform(
-            minval=-0.01, maxval=0.01)
         self.l1 = Dense(
-            self.layer1Dim, activation='relu', kernel_regularizer='l1_l2', kernel_initializer=initializer)
+            self.layer1Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
         self.l2 = Dense(
-            self.layer2Dim, activation='relu', kernel_regularizer='l1_l2', kernel_initializer=initializer)
-        self.lq = Dense(
-            1, activation=None, kernel_regularizer='l1_l2', kernel_initializer=initializer)
+            self.layer2Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
+        self.lq = Dense(1, activation=None)
 
     def __call__(self, state, action):
         x = self.l1(tf.concat([state, action], axis=1))
-        x = self.l2(x)
+        # x = self.l2(x)
         x = self.lq(x)
         return x

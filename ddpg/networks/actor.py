@@ -4,7 +4,7 @@
 # https://opensource.org/licenses/MIT
 
 import tensorflow as tf
-from tensorflow.python.keras.layers import Dense, Lambda
+from tensorflow.python.keras.layers import Dense
 import keras
 
 
@@ -19,19 +19,16 @@ class Actor(keras.Model):
 
     def createModel(self):
         "creates keras model of 2 dense layers followed by a custom piece-wise linear output"
-        initializer = tf.keras.initializers.RandomUniform(
-            minval=-0.01, maxval=0.01)
-        self.l1 = Dense(self.layer1Dim, activation='relu',
-                        kernel_regularizer='l1_l2', kernel_initializer=initializer)
-        self.l2 = Dense(self.layer2Dim, activation='relu',
-                        kernel_regularizer='l1_l2', kernel_initializer=initializer)
+        self.l1 = Dense(
+            self.layer1Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
+        self.l2 = Dense(
+            self.layer2Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
         # self.l3 = PLULayer(self.actionDim)
-        self.l3 = Dense(self.actionDim, activation='tanh',
-                        kernel_regularizer='l1_l2', kernel_initializer=initializer)
+        self.l3 = Dense(self.actionDim, activation='tanh')
 
     def __call__(self, state):
         x = self.l1(state)
-        x = self.l2(x)
+        # x = self.l2(x)
         x = self.l3(x)
         return x
 
@@ -53,7 +50,7 @@ class PLULayer(tf.keras.layers.Layer):
         return pieceWiseLinear(x)
 
 
-@tf.custom_gradient
+@ tf.custom_gradient
 def pieceWiseLinear(x):
     bool_up_flag = tf.greater(x, 100)
     bool_down_flag = tf.less(x, -100)

@@ -31,15 +31,16 @@ def plotQ(agent: Agent) -> None:
     plt.show()
 
 
-def plotAction(agent: Agent) -> None:
+def plotAction(agent: Agent, iter) -> None:
     "plots a 2D canvas of the x input for a given state"
+    print("Generating action space figure ...")
     size = 50
     AXArray = np.zeros((size, size))
     AYArray = np.zeros((size, size))
     for xIdx, x in enumerate(np.linspace(-6, 6, size)):
-        print(f"{round(100*(xIdx/size))} % computed")
+        # print(f"{round(100*(xIdx/size))} % computed")
         for yIdx, y in enumerate(np.linspace(6, -6, size)):
-            state = tf.constant([[x, y, 0, 0]], dtype=tf.float32)
+            state = tf.constant([[x, y]], dtype=tf.float32)
             action = agent.act(state)
             AXArray[yIdx, xIdx] = action[0][0]
             AYArray[yIdx, xIdx] = action[0][1]
@@ -50,15 +51,16 @@ def plotAction(agent: Agent) -> None:
     plt.colorbar(ticks=[0.1, 0.3, 0.5, 0.7], orientation='horizontal')
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.title("action in x component")
+    plt.title(f"u_x(x,y)")
     ax = fig.add_subplot(1, 2, 2)
     imgplot = plt.imshow(AYArray, interpolation='nearest',
                          cmap='hot', extent=[-6, 6, -6, 6])
     plt.colorbar(ticks=[0.1, 0.3, 0.5, 0.7], orientation='horizontal')
     plt.xlabel("x")
-    plt.ylabel("y")
-    plt.title("action in y component")
-    plt.show()
+    # plt.ylabel("y")
+    plt.title("u_y(x,y)")
+    plt.savefig(f"ddpg/figures/episode_{iter}.png")
+    plt.close()
 
 
 def plotReward(episodeAvgScore) -> None:
