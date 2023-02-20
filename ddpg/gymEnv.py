@@ -26,9 +26,9 @@ class Mouse(gym.Env):
         self.old_angle = 0
         self.maxTime = max_steps*self.dt
         self.timePenalty = 0
-        self.actionPenalty = 1
-        self.distancePenalty = 0
-        self.punishment_obstacle = -100
+        self.actionPenalty = 0
+        self.distancePenalty = -1
+        self.obstaclePenalty = -1000
         self.reward_goal = 1000
 
         self.obstacle_color = (100, 0, 0)
@@ -123,10 +123,10 @@ class Mouse(gym.Env):
     def reset(self):
         # super().reset(seed=seed)
         self.history = []
-        # x0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
-        # y0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
+        x0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
+        y0 = np.random.uniform(self.field_limit[0], self.field_limit[1])
 
-        # self.initState = np.array([x0, y0, 0, 0])
+        self.initState = np.array([x0, y0, 0, 0])
         # self.state = {
         #     'x': self.initState[0],
         #     'y': self.initState[1],
@@ -183,24 +183,21 @@ class Mouse(gym.Env):
 
         if self.check_done():
             if distFromGoal <= self.successThreshold:
-                if self.time == 0:
-                    return 0
-                else:
-                    return self.reward_goal
+                return self.reward_goal
             elif self.time > self.maxTime:
-                return -self.distancePenalty*distFromGoal - self.actionPenalty * actionAmplitude
+                return self.distancePenalty*distFromGoal + self.actionPenalty * actionAmplitude
             else:
-                return -self.timePenalty + self.punishment_obstacle -\
-                    self.distancePenalty*distFromGoal - self.actionPenalty * actionAmplitude
+                return self.timePenalty + self.obstaclePenalty +\
+                    self.distancePenalty*distFromGoal + self.actionPenalty * actionAmplitude
         else:
-            return -self.timePenalty - self.distancePenalty*distFromGoal - self.actionPenalty * actionAmplitude
+            return self.timePenalty + self.distancePenalty*distFromGoal + self.actionPenalty * actionAmplitude
 
     def check_done(self):
         if np.sqrt((self.state['x'] - self.goal['x'])**2 + (self.state['y'] - self.goal['y'])**2) <= self.successThreshold:
             return 1
         elif self.time > self.maxTime:
             return 1
-        elif abs(self.state['x']) > 5 or abs(self.state['y']) > 5:
+        elif abs(self.state['x']) >= 5 or abs(self.state['y']) >= 5:
             return 1
         elif self.pos_to_pixel([self.state['x'], self.state['y']]) in self.obstacle_set:
             return 1
@@ -365,11 +362,11 @@ class Mouse(gym.Env):
         p2r3 = self.pos_to_pixel(np.dot(R3, p2) + offset3)
         p3r3 = self.pos_to_pixel(np.dot(R3, p3) + offset3)
 
-        # pygame.draw.polygon(
-        #     canvas,
-        #     self.obstacle_color,
-        #     [p1r1, p2r1, p3r1]
-        # )
+        pygame.draw.polygon(
+            canvas,
+            self.obstacle_color,
+            [p1r1, p2r1, p3r1]
+        )
         # pygame.draw.polygon(
         #     canvas,
         #     self.obstacle_color,

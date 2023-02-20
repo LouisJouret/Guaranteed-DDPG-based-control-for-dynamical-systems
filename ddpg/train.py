@@ -13,7 +13,7 @@ import gym
 # agent = Agent(env.action_space.shape[0], env.observation_space.shape[0])
 env = Mouse()
 agent = Agent(len(env.actions), len(env.observations))
-episodes = 1400
+episodes = 1000
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
@@ -51,12 +51,13 @@ for episode in range(episodes):
             history_succes)*100/movAvglength
     print(
         f" episode {episode} has a score of {score} and an average success of {percent_succes} %")
-    episodeAvgScore.append(percent_succes)
+    episodeAvgScore.append(avg)
     if best < avg:
         agent.save()
         best = avg
 
     if episode % 100 == 0:
+        utils.plotActionVectors(agent, env, episode)
         utils.plotAction(agent, episode)
 
 utils.plotReward(episodeAvgScore)

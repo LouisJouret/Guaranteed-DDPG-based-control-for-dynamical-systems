@@ -7,7 +7,7 @@ import tensorflow as tf
 from networks.actor import Actor
 from networks.critic import Critic
 from buffer import RBuffer
-from keras.optimizers import Adam
+from keras.optimizers import Adagrad, Adam, RMSprop
 import keras
 
 
@@ -20,13 +20,13 @@ class Agent():
         self.criticMain = Critic(self.stateDim, 1, 32, 32)
         self.criticTarget = Critic(self.stateDim, 1, 32, 32)
 
-        self.actorOptimizer = Adam(learning_rate=1e-5)
-        self.criticOptimizer = Adam(learning_rate=1e-5)
+        self.actorOptimizer = Adam(learning_rate=1e-4)
+        self.criticOptimizer = Adam(learning_rate=5e-4)
 
         self.gamma = 0.99
         self.tau = 0.005
 
-        self.batchSize = 10000
+        self.batchSize = 64
         self.maxBufferSize = 100000
 
         self.replayBuffer = RBuffer(maxsize=self.maxBufferSize,
@@ -42,9 +42,14 @@ class Agent():
         self.updateCriticTarget(1)
 
     def act(self, state):
-        actions = self.actorMain(state)
-        actions += tf.random.normal(shape=[self.actionDim],
-                                    mean=0.0, stddev=0.1)
+        if self.replayBuffer.cnt < self.batchSize:
+            actions = tf.random.normal(
+                shape=(1, self.actorMain.actionDim), mean=0.0, stddev=1.0)
+
+        else:
+            actions = self.actorMain(state)
+            actions += tf.random.normal(shape=[self.actionDim],
+                                        mean=0.0, stddev=0.2)
         actions = tf.clip_by_value(actions, -1, 1)
         return actions
 

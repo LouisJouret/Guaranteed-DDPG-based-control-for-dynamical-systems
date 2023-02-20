@@ -28,7 +28,7 @@ class Actor(keras.Model):
 
     def __call__(self, state):
         x = self.l1(state)
-        # x = self.l2(x)
+        x = self.l2(x)
         x = self.l3(x)
         return x
 

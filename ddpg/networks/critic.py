@@ -27,6 +27,6 @@ class Critic(keras.Model):
 
     def __call__(self, state, action):
         x = self.l1(tf.concat([state, action], axis=1))
-        # x = self.l2(x)
+        x = self.l2(x)
         x = self.lq(x)
         return x

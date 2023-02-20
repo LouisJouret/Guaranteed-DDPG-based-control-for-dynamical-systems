@@ -59,7 +59,37 @@ def plotAction(agent: Agent, iter) -> None:
     plt.xlabel("x")
     # plt.ylabel("y")
     plt.title("u_y(x,y)")
-    plt.savefig(f"ddpg/figures/episode_{iter}.png")
+    plt.savefig(f"ddpg/figures/episode_{iter}_value.png")
+    plt.close()
+
+
+def plotActionVectors(agent: Agent, env, iter) -> None:
+    "plots a 2D canvas of the x input for a given state"
+    print("Generating action space figure ...")
+    size = 20
+    x = np.linspace(-5, 5, size)
+    y = np.linspace(-5, 5, size)
+    XArray = np.zeros((size, size))
+    YArray = np.zeros((size, size))
+    AXArray = np.zeros((size, size))
+    AYArray = np.zeros((size, size))
+    for xIdx, x in enumerate(np.linspace(-5, 5, size)):
+        for yIdx, y in enumerate(np.linspace(5, -5, size)):
+            state = tf.constant([[x, y]], dtype=tf.float32)
+            action = agent.act(state)
+            AXArray[yIdx, xIdx] = action[0][0]
+            AYArray[yIdx, xIdx] = action[0][1]
+            XArray[yIdx, xIdx] = x
+            YArray[yIdx, xIdx] = y
+    fig = plt.figure()
+    plt.Circle(
+        (env.goal['x'], env.goal['y']), env.successThreshold, color='g')
+    plt.quiver(XArray, YArray, AXArray, AYArray)
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.axis('square')
+    plt.title(f"action vectors for episode {iter}")
+    plt.savefig(f"ddpg/figures/episode_{iter}_vectors.png")
     plt.close()
 
 
