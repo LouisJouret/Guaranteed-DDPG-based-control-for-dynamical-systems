@@ -13,7 +13,7 @@ import gym
 # agent = Agent(env.action_space.shape[0], env.observation_space.shape[0])
 env = Mouse()
 agent = Agent(len(env.actions), len(env.observations))
-episodes = 1000
+episodes = 5000
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
@@ -28,7 +28,8 @@ for episode in range(episodes):
     score = 0
     observation = env.reset()
     while not done:
-        # env.render()
+        if episode > 3*episodes/4:
+            env.render()
         action = agent.act(np.array([observation]))
         nextObservation, reward, done, _ = env.step(action[0])
         agent.replayBuffer.storexp(
@@ -59,5 +60,6 @@ for episode in range(episodes):
     if episode % 100 == 0:
         utils.plotActionVectors(agent, env, episode)
         utils.plotAction(agent, episode)
+        # utils.plotQ(agent, episode)
 
 utils.plotReward(episodeAvgScore)

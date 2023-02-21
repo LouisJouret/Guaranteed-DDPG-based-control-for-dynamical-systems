@@ -10,7 +10,7 @@ import numpy as np
 import random
 
 
-def plotQ(agent: Agent) -> None:
+def plotQ(agent: Agent, iter) -> None:
     "plots a 2D canvas of the Q-function for a given state and action"
     size = 50
     QArray = np.zeros((size, size))
@@ -28,7 +28,8 @@ def plotQ(agent: Agent) -> None:
     plt.title(f"Q-function for best action")
     plt.xlabel("y")
     plt.ylabel("x")
-    plt.show()
+    plt.savefig(f"ddpg/figures/episode_{iter}_Q.png")
+    plt.close()
 
 
 def plotAction(agent: Agent, iter) -> None:
@@ -82,7 +83,7 @@ def plotActionVectors(agent: Agent, env, iter) -> None:
             XArray[yIdx, xIdx] = x
             YArray[yIdx, xIdx] = y
     fig = plt.figure()
-    plt.Circle(
+    circle1 = plt.Circle(
         (env.goal['x'], env.goal['y']), env.successThreshold, color='g')
     plt.quiver(XArray, YArray, AXArray, AYArray)
     plt.xlabel("x")

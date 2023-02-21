@@ -39,11 +39,9 @@ class PLULayer(tf.keras.layers.Layer):
         self.num_outputs = num_outputs
 
     def build(self, input_shape):
-        intializer = tf.keras.initializers.GlorotNormal()
         self.kernel = self.add_weight("kernel",
                                       shape=[int(input_shape[-1]),
-                                             self.num_outputs],
-                                      regularizer=tf.keras.regularizers.l1_l2(), initializer=intializer)
+                                             self.num_outputs])
 
     def call(self, x):
         x = tf.matmul(x, self.kernel)

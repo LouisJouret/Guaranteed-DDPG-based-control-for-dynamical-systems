@@ -372,11 +372,11 @@ class Mouse(gym.Env):
         #     self.obstacle_color,
         #     [p1r2, p2r2, p3r2]
         # )
-        # pygame.draw.polygon(
-        #     canvas,
-        #     self.obstacle_color,
-        #     [p1r3, p2r3, p3r3]
-        # )
+        pygame.draw.polygon(
+            canvas,
+            self.obstacle_color,
+            [p1r3, p2r3, p3r3]
+        )
 
     def bean_obstacle(self, canvas):
         """ Draws a bean obstacle"""
