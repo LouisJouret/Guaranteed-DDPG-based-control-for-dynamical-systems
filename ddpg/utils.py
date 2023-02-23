@@ -6,6 +6,7 @@
 import matplotlib.pyplot as plt
 from agent import Agent
 import tensorflow as tf
+import polytope as pc
 import numpy as np
 import random
 
@@ -83,8 +84,6 @@ def plotActionVectors(agent: Agent, env, iter) -> None:
             XArray[yIdx, xIdx] = x
             YArray[yIdx, xIdx] = y
     fig = plt.figure()
-    circle1 = plt.Circle(
-        (env.goal['x'], env.goal['y']), env.successThreshold, color='g')
     plt.quiver(XArray, YArray, AXArray, AYArray)
     plt.xlabel("x")
     plt.ylabel("y")
@@ -92,6 +91,12 @@ def plotActionVectors(agent: Agent, env, iter) -> None:
     plt.title(f"action vectors for episode {iter}")
     plt.savefig(f"ddpg/figures/episode_{iter}_vectors.png")
     plt.close()
+
+
+def plotLinearRegion(agent: Agent, iter) -> None:
+    "plots the linear regions/polytopes of the Neural Network"
+    weights = agent.actorMain.get_weights()[0]
+    bias = agent.actorMain.get_weights()[1]
 
 
 def plotReward(episodeAvgScore) -> None:

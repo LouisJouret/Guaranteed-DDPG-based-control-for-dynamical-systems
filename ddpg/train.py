@@ -7,10 +7,7 @@ import numpy as np
 from agent import Agent
 import utils
 from gymEnv import Mouse
-import gym
 
-# env = gym.make('Pendulum-v0')
-# agent = Agent(env.action_space.shape[0], env.observation_space.shape[0])
 env = Mouse()
 agent = Agent(len(env.actions), len(env.observations))
 episodes = 5000

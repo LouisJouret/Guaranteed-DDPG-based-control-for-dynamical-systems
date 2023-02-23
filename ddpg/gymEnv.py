@@ -27,7 +27,7 @@ class Mouse(gym.Env):
         self.maxTime = max_steps*self.dt
         self.timePenalty = 0
         self.actionPenalty = 0
-        self.distancePenalty = -1
+        self.distancePenalty = 0
         self.obstaclePenalty = -1000
         self.reward_goal = 1000
 
