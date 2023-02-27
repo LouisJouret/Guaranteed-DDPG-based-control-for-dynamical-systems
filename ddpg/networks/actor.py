@@ -4,32 +4,38 @@
 # https://opensource.org/licenses/MIT
 
 import tensorflow as tf
-from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import Dense, InputLayer
 import keras
 
 
 class Actor(keras.Model):
-    def __init__(self, stateDim, actionDim, layer1Dim=512, layer2Dim=512):
+    def __init__(self, stateDim, actionDim, layer1Dim=512, layer2Dim=512, layer3Dim=512):
         super().__init__()
         self.stateDim = stateDim
         self.actionDim = actionDim
         self.layer1Dim = layer1Dim
         self.layer2Dim = layer2Dim
+        self.layer3Dim = layer3Dim
         self.createModel()
 
     def createModel(self):
-        "creates keras model of 2 dense layers followed by a custom piece-wise linear output"
+        "creates keras model of 3 dense layers followed by a custom piece-wise linear output"
+        self.l0 = InputLayer(input_shape=self.stateDim)
         self.l1 = Dense(
-            self.layer1Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
+            self.layer1Dim, activation='relu')
         self.l2 = Dense(
-            self.layer2Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
-        # self.l3 = PLULayer(self.actionDim)
-        self.l3 = Dense(self.actionDim, activation='tanh')
+            self.layer2Dim, activation='relu')
+        self.l3 = Dense(
+            self.layer3Dim, activation='relu')
+        # self.lact = PLULayer(self.actionDim)
+        self.lact = Dense(self.actionDim, activation='tanh')
 
     def __call__(self, state):
-        x = self.l1(state)
+        x = self.l0(state)
+        x = self.l1(x)
         x = self.l2(x)
         x = self.l3(x)
+        x = self.lact(x)
         return x
 
 

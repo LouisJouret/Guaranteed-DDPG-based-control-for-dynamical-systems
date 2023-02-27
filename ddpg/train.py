@@ -10,7 +10,7 @@ from gymEnv import Mouse
 
 env = Mouse()
 agent = Agent(len(env.actions), len(env.observations))
-episodes = 5000
+episodes = 1000
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
@@ -54,9 +54,10 @@ for episode in range(episodes):
         agent.save()
         best = avg
 
-    if episode % 100 == 0:
+    if episode % 100 == 2:
         utils.plotActionVectors(agent, env, episode)
         utils.plotAction(agent, episode)
+        utils.plotLinearRegion(agent, episode)
         # utils.plotQ(agent, episode)
 
 utils.plotReward(episodeAvgScore)

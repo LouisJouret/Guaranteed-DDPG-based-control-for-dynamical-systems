@@ -3,12 +3,14 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
+from __future__ import annotations
 import matplotlib.pyplot as plt
 from agent import Agent
 import tensorflow as tf
 import polytope as pc
 import numpy as np
 import random
+import keras
 
 
 def plotQ(agent: Agent, iter) -> None:
@@ -59,7 +61,6 @@ def plotAction(agent: Agent, iter) -> None:
                          cmap='hot', extent=[-6, 6, -6, 6])
     plt.colorbar(ticks=[0.1, 0.3, 0.5, 0.7], orientation='horizontal')
     plt.xlabel("x")
-    # plt.ylabel("y")
     plt.title("u_y(x,y)")
     plt.savefig(f"ddpg/figures/episode_{iter}_value.png")
     plt.close()
@@ -94,9 +95,103 @@ def plotActionVectors(agent: Agent, env, iter) -> None:
 
 
 def plotLinearRegion(agent: Agent, iter) -> None:
-    "plots the linear regions/polytopes of the Neural Network"
-    weights = agent.actorMain.get_weights()[0]
-    bias = agent.actorMain.get_weights()[1]
+    "plots the linear regions of the Neural Network"
+
+    A_border = np.array([[1.0, 0.0],
+                        [-1.0, 0.0],
+                        [0.0, 1.0],
+                        [0.0, -1.0]])
+    b_border = 5 * np.array([1.0, 1.0, 1.0, 1.0])
+    border_polytope = pc.Polytope(A_border, b_border)
+    box = pc.bounding_box(border_polytope)
+
+    regions = [Region(border_polytope, old_S=np.identity(2),
+                      old_w_actif=np.identity(2), old_b_actif=np.zeros((2, 1)))]
+
+    for layer in [agent.actorMain.l1, agent.actorMain.l2, agent.actorMain.l3]:
+        weights = layer.weights
+        new_regions = []
+        for region in regions:
+            region.compute_activation_weights(weights)
+            region.cut()
+            region.compute_S()
+            region.inherite_actif_para()
+            for kid in region.kids:
+                new_regions.append(kid)
+        regions = new_regions
+
+    print(len(new_regions))
+    fig, ax = plt.subplots()
+    for region in new_regions:
+        region.polytope.plot(ax, linewidth=0.5, linestyle='--')
+    ax.set_xlim(box[0][0]-1, box[1][0] + 1)
+    ax.set_ylim(box[0][1]-1, box[1][1] + 1)
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.axis('square')
+    plt.title(f"{len(regions)} linear regions for episode {iter}")
+    plt.savefig(f"ddpg/figures/episode_{iter}_linear_regions.png")
+    plt.close()
+
+
+class Region:
+    def __init__(self, polytope: pc.Polytope, old_S=None, old_w_actif=None, old_b_actif=None):
+        self.polytope = polytope
+        self.old_w_actif = old_w_actif
+        self.old_b_actif = old_b_actif
+        self.w_actif = None
+        self.b_actif = None
+        self.kids = []  # list of sub regions
+        self.old_S = old_S
+        self.cuts = []
+
+    def cut(self):
+        W = self.w_actif
+        B = self.b_actif
+        for neuron in range(W.shape[0]):
+            w = np.array(W[:, neuron])
+            b = np.array(B[neuron])
+            print(self.polytope.A)
+            print(w)
+            cut = pc.Polytope(np.vstack((self.polytope.A, -w)),
+                              np.append(self.polytope.b, b))
+            self.cuts.append(cut)
+
+        self.kids = [Region(self.polytope)]
+        for cut in self.cuts:
+            copy = list(self.kids)
+            for sub_region in copy:
+                first_kid = Region(sub_region.polytope.intersect(cut))
+                if first_kid.polytope.volume > 0:
+                    second_kid = Region(
+                        sub_region.polytope.diff(first_kid.polytope))
+                    if second_kid.polytope.volume > 0:
+                        self.kids.append(first_kid)
+                        self.kids.append(second_kid)
+                        self.kids.remove(sub_region)
+
+    def compute_activation_weights(self, weights):
+        W = np.transpose(weights[0])
+        B = np.transpose([weights[1]])
+        self.w_actif = np.matmul(W, np.matmul(self.old_S, self.old_w_actif))
+        print(self.w_actif.shape)
+        self.b_actif = np.matmul(W, np.dot(
+            self.old_S, self.old_b_actif)) + B
+
+    def compute_S(self):
+        for kid in self.kids:
+            S = []
+            for cut in self.cuts:
+                if kid.polytope == pc.intersect(kid.polytope, cut):
+                    S.append(1)
+                else:
+                    S.append(0)
+            kid.old_S = np.diag(S)
+
+    def inherite_actif_para(self):
+        for kid in self.kids:
+            kid.old_w_actif = self.w_actif
+            kid.old_b_actif = self.b_actif
 
 
 def plotReward(episodeAvgScore) -> None:

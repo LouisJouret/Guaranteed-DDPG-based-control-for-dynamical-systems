@@ -15,8 +15,8 @@ class Agent():
     def __init__(self, num_actions, num_states) -> None:
         self.actionDim = num_actions
         self.stateDim = (num_states,)
-        self.actorMain = Actor(self.stateDim, self.actionDim, 16, 16)
-        self.actorTarget = Actor(self.stateDim, self.actionDim, 16, 16)
+        self.actorMain = Actor(self.stateDim, self.actionDim, 2, 2, 2)
+        self.actorTarget = Actor(self.stateDim, self.actionDim, 2, 2, 2)
         self.criticMain = Critic(self.stateDim, 1, 512, 512)
         self.criticTarget = Critic(self.stateDim, 1, 512, 512)
 
