@@ -22,11 +22,11 @@ class Actor(keras.Model):
         "creates keras model of 3 dense layers followed by a custom piece-wise linear output"
         self.l0 = InputLayer(input_shape=self.stateDim)
         self.l1 = Dense(
-            self.layer1Dim, activation='relu')
+            self.layer1Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
         self.l2 = Dense(
-            self.layer2Dim, activation='relu')
+            self.layer2Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
         self.l3 = Dense(
-            self.layer3Dim, activation='relu')
+            self.layer3Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
         # self.lact = PLULayer(self.actionDim)
         self.lact = Dense(self.actionDim, activation='tanh')
 

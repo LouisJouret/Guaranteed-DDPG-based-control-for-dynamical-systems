@@ -106,8 +106,8 @@ def plotLinearRegion(agent: Agent, iter) -> None:
     border_polytope = pc.Polytope(A_border, b_border)
     box = pc.bounding_box(border_polytope)
 
-    regions = [Region(border_polytope, old_S=np.identity(2),
-                      old_w_actif=np.identity(2), old_b_actif=np.zeros((2, 1)))]
+    regions = [RegionReLU(border_polytope, old_S=np.identity(2),
+                          old_w_actif=np.identity(2), old_b_actif=np.zeros((2, 1)))]
 
     for layer in [agent.actorMain.l1, agent.actorMain.l2, agent.actorMain.l3]:
         weights = layer.weights
@@ -120,6 +120,22 @@ def plotLinearRegion(agent: Agent, iter) -> None:
             for kid in region.kids:
                 new_regions.append(kid)
         regions = new_regions
+
+    regionsPlu = []
+    for region in regions:
+        regionPlu = RegionPLU(polytope=region.polytope, old_S=region.old_S,
+                              old_w_actif=region.old_w_actif, old_b_actif=region.old_b_actif)
+        regionsPlu.append(regionPlu)
+    weights = agent.actorMain.lact.weights
+    new_regions = []
+    for region in regionsPlu:
+        region.compute_activation_weights(weights)
+        region.cut()
+        region.compute_S()
+        region.inherite_actif_para()
+        for kid in region.kids:
+            new_regions.append(kid)
+    regions = new_regions
 
     fig, ax = plt.subplots()
     for region in new_regions:
@@ -134,7 +150,7 @@ def plotLinearRegion(agent: Agent, iter) -> None:
     plt.close()
 
 
-class Region:
+class RegionReLU:
     def __init__(self, polytope: pc.Polytope, old_S=None, old_w_actif=None, old_b_actif=None):
         self.polytope = polytope
         self.old_w_actif = old_w_actif
@@ -155,13 +171,13 @@ class Region:
                               np.append(self.polytope.b, b))
             self.cuts.append(cut)
 
-        self.kids = [Region(self.polytope)]
+        self.kids = [RegionReLU(self.polytope)]
         for cut in self.cuts:
             copy = list(self.kids)
             for sub_region in copy:
-                first_kid = Region(sub_region.polytope.intersect(cut))
+                first_kid = RegionReLU(sub_region.polytope.intersect(cut))
                 if first_kid.polytope.volume > 0:
-                    second_kid = Region(
+                    second_kid = RegionReLU(
                         sub_region.polytope.diff(first_kid.polytope))
                     if second_kid.polytope.volume > 0:
                         self.kids.append(first_kid)
@@ -189,6 +205,44 @@ class Region:
         for kid in self.kids:
             kid.old_w_actif = self.w_actif
             kid.old_b_actif = self.b_actif
+
+
+class RegionPLU(RegionReLU):
+
+    def __init__(self, polytope: pc.Polytope, old_S=None, old_w_actif=None, old_b_actif=None):
+        super().__init__(polytope, old_S, old_w_actif, old_b_actif)
+
+    def cut(self):
+        W = self.w_actif
+        B = self.b_actif
+        for neuron in range(W.shape[0]):
+            w = np.array(W[neuron, :])
+            b = np.array(B[neuron])
+            cut1 = pc.Polytope(np.vstack((self.polytope.A, -w)),
+                               np.append(self.polytope.b, b - 1))
+            cut2 = pc.Polytope(np.vstack((self.polytope.A, w)),
+                               np.append(self.polytope.b, b - 0.5))
+            cut3 = pc.Polytope(np.vstack((self.polytope.A, -w)),
+                               np.append(self.polytope.b, b + 0.5))
+            cut4 = pc.Polytope(np.vstack((self.polytope.A, w)),
+                               np.append(self.polytope.b, b + 1))
+            self.cuts.append(cut1)
+            self.cuts.append(cut2)
+            self.cuts.append(cut3)
+            self.cuts.append(cut4)
+
+        self.kids = [RegionPLU(self.polytope)]
+        for cut in self.cuts:
+            copy = list(self.kids)
+            for sub_region in copy:
+                first_kid = RegionPLU(sub_region.polytope.intersect(cut))
+                if first_kid.polytope.volume > 0:
+                    second_kid = RegionPLU(
+                        sub_region.polytope.diff(first_kid.polytope))
+                    if second_kid.polytope.volume > 0:
+                        self.kids.append(first_kid)
+                        self.kids.append(second_kid)
+                        self.kids.remove(sub_region)
 
 
 def plotReward(episodeAvgScore) -> None:
