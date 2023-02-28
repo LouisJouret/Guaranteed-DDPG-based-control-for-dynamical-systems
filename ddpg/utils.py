@@ -17,7 +17,7 @@ def plotQ(agent: Agent, iter) -> None:
     "plots a 2D canvas of the Q-function for a given state and action"
     size = 50
     QArray = np.zeros((size, size))
-    print(f"plotting the Q-function for best action")
+    print(f"plotting the Q-function for best action ...")
     for xIdx, x in enumerate(np.linspace(-6, 6, size)):
         print(f"{round(100*(xIdx/size))} % computed")
         for yIdx, y in enumerate(np.linspace(6, -6, size)):
@@ -51,14 +51,14 @@ def plotAction(agent: Agent, iter) -> None:
     fig = plt.figure()
     ax = fig.add_subplot(1, 2, 1)
     imgplot = plt.imshow(AXArray, interpolation='nearest',
-                         cmap='hot', extent=[-6, 6, -6, 6])
+                         cmap='hot', extent=[-5, 5, -5, 5])
     plt.colorbar(ticks=[0.1, 0.3, 0.5, 0.7], orientation='horizontal')
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title(f"u_x(x,y)")
     ax = fig.add_subplot(1, 2, 2)
     imgplot = plt.imshow(AYArray, interpolation='nearest',
-                         cmap='hot', extent=[-6, 6, -6, 6])
+                         cmap='hot', extent=[-5, 5, -5, 5])
     plt.colorbar(ticks=[0.1, 0.3, 0.5, 0.7], orientation='horizontal')
     plt.xlabel("x")
     plt.title("u_y(x,y)")
@@ -68,7 +68,7 @@ def plotAction(agent: Agent, iter) -> None:
 
 def plotActionVectors(agent: Agent, env, iter) -> None:
     "plots a 2D canvas of the x input for a given state"
-    print("Generating action space figure ...")
+    print("Generating action vectors ...")
     size = 20
     x = np.linspace(-5, 5, size)
     y = np.linspace(-5, 5, size)
@@ -97,6 +97,7 @@ def plotActionVectors(agent: Agent, env, iter) -> None:
 def plotLinearRegion(agent: Agent, iter) -> None:
     "plots the linear regions of the Neural Network"
 
+    print("Generating the linear regions of the action space ...")
     A_border = np.array([[1.0, 0.0],
                         [-1.0, 0.0],
                         [0.0, 1.0],
@@ -120,7 +121,6 @@ def plotLinearRegion(agent: Agent, iter) -> None:
                 new_regions.append(kid)
         regions = new_regions
 
-    print(len(new_regions))
     fig, ax = plt.subplots()
     for region in new_regions:
         region.polytope.plot(ax, linewidth=0.5, linestyle='--')
@@ -149,10 +149,8 @@ class Region:
         W = self.w_actif
         B = self.b_actif
         for neuron in range(W.shape[0]):
-            w = np.array(W[:, neuron])
+            w = np.array(W[neuron, :])
             b = np.array(B[neuron])
-            print(self.polytope.A)
-            print(w)
             cut = pc.Polytope(np.vstack((self.polytope.A, -w)),
                               np.append(self.polytope.b, b))
             self.cuts.append(cut)
@@ -174,7 +172,6 @@ class Region:
         W = np.transpose(weights[0])
         B = np.transpose([weights[1]])
         self.w_actif = np.matmul(W, np.matmul(self.old_S, self.old_w_actif))
-        print(self.w_actif.shape)
         self.b_actif = np.matmul(W, np.dot(
             self.old_S, self.old_b_actif)) + B
 
