@@ -6,36 +6,43 @@
 \section{Theory}
 \newframedtheorem{theorem}{Theorem}
 \newframedtheorem{corollary}{Corollary}[theorem]
+
 \begin{theorem}
-Consider two closed sets $\mathcal{O}$ and $\mathcal{S}$, such that $\mathcal{O}$ is a practical set defined by
+Consider the closed set $\mathcal{O}$ and the system $\dot{x}(t) = f(x(t))$ and assume that for each initial
+condition $x(0) \notin \mathcal{O}$ it admits a unique solution defined for all 
+$t \geq 0$. Then $x(t) \notin \interior{\mathcal{O}}$ for $t \geq 0$ if and 
+only if the velocity vector satisfies:
+
+\begin{align*}
+    f(x) \notin \interior{\mathcal{T}_{\mathcal{O}}(x)}, \text{for all } x \in \partial \mathcal{O}
+\end{align*}
+\end{theorem}
+
+\begin{theorem}
+Consider the pratical set $\mathcal{O}$ defined by
 \begin{equation}
     \mathcal{O} = \left\{x : g_k(x) \leq 0, k = 1,2,\ldots,r \right\}
 \end{equation}
 
-Now consider the system $\dot{x} = f(x)$ and assume that for each initial
-condition $x(0)$ in $\mathcal{S} \setminus \mathcal{O}$ it admits a unique solution defined for all $t \geq 0$. Then  
-$\mathcal{S} \setminus \mathcal{O}$ is positively invariant for the system if and
+Now consider the system $\dot{x}(t) = f(x(t))$ and assume that for each initial
+condition $x(0) \notin \mathcal{O}$ it admits a unique solution defined for all 
+$t \geq 0$. Then $x(t) \notin \interior{\mathcal{O}}$ for $t \geq 0$ if and 
 only if the velocity vector satisfies:
 
-\begin{equation}
-    f(x) \notin \mathcal{T}_{\mathcal{O}}(x) \textit{, for all } x \in \partial\mathcal{O} \cap \mathcal{S}
-    \label{eq:th1}
-\end{equation}
+\begin{align*}
+    f(x) \in \left\{z : \nabla g_{i}{(x)}^T z \geq 0 \text{, for all i} \in B(x)\right\} , \text{where } B(x) = \left\{i : g_i(x) = 0 \right\}
+\end{align*}
 \end{theorem}
 
-Equation (\ref{eq:th1}) can be geometrically interpreted as
-\begin{align*}
-    f(x) \in \left\{z : \nabla g_{i}{(x)}^T z > 0 \text{, for all i} \in B(x)\right\} , \text{where } B(x) = \left\{i : g_i(x) = 0 \right\}
-\end{align*}
 
 \begin{corollary}
-Under the assumption that the set $\mathcal{O}$ is a polytope defined by
+If all the assumptions and conditions of Theorem 1 are verified and the set 
+$\mathcal{O}$ is a polytope defined by
 \begin{equation}
     \mathcal{O} = \left\{x : C_{\mathcal{O}}x \leq d_{\mathcal{O}} \right\}
 \end{equation}
-Let's consider the system $\dot x = f(x)$. Then  
-$\mathcal{S} \setminus \mathcal{O}$ is positively invariant for the 
-system if and only if the velocity vector satisfies:
+then $x(t) \notin \interior{\mathcal{O}}$ for $t \geq 0$ if and 
+only if the velocity vector satisfies:
 
 \begin{equation}
     f(x) \in \left\{z : \begin{bmatrix}
@@ -44,7 +51,25 @@ system if and only if the velocity vector satisfies:
         .\\
         .\\
         \mathcal{C}_{\mathcal{O}_{i,n}}
-    \end{bmatrix}^T z > 0 \text{, for all }i: \text{row}_i(\mathcal{C}_{\mathcal{O}}) \cdot x = d_{\mathcal{O}_i} \right\}
-    \label{eq:col1}
+    \end{bmatrix}^T z > 0 \text{, for all }i: \text{row}_i(\mathcal{C}_{\mathcal{O}})
+     \cdot x = \Vec{d}_{\mathcal{O}_i} \right\}
 \end{equation}
 \end{corollary}
+
+\begin{theorem}
+Consider a linear time-invariant system of the form $\Vec{\dot x} = Ax + \Vec{b}$.
+Let's define $\mathcal{O} = \left\{x : c^T x \leq d \right\}$ and 
+$x_{\lambda} = \lambda \cdot x_1 + (1-\lambda) \cdot x_2$ where $\lambda$
+is a scalar.
+
+Then,  
+\begin{equation}
+    \left \{
+    \begin{array}{ll}
+        c^T \cdot f(x_1) > 0\\
+        c^T \cdot f(x_2) > 0
+    \end{array}
+    \right. \Rightarrow c^T \cdot f(x_\lambda) > 0
+\end{equation}
+
+\end{theorem}
