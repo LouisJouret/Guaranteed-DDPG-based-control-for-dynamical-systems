@@ -7,21 +7,30 @@ import tensorflow as tf
 from networks.actor import Actor
 from networks.critic import Critic
 from buffer import RBuffer
-from keras.optimizers import Adagrad, Adam, RMSprop
-import keras
+from keras.optimizers import Adam
 
 
 class Agent():
     def __init__(self, num_actions, num_states) -> None:
         self.actionDim = num_actions
         self.stateDim = (num_states,)
-        self.actorMain = Actor(self.stateDim, self.actionDim, 3, 5, 3)
-        self.actorTarget = Actor(self.stateDim, self.actionDim, 3, 5, 3)
+        self.actorMain = Actor(self.stateDim, self.actionDim, 8, 8)
+        self.actorTarget = Actor(self.stateDim, self.actionDim, 8, 8)
         self.criticMain = Critic(self.stateDim, 1, 512, 512)
         self.criticTarget = Critic(self.stateDim, 1, 512, 512)
 
-        self.actorOptimizer = Adam(learning_rate=1e-4)
-        self.criticOptimizer = Adam(learning_rate=5e-4)
+        lr_schedule_actor = tf.keras.optimizers.schedules.ExponentialDecay(
+            initial_learning_rate=1e-4,
+            decay_steps=10000,
+            decay_rate=0.9)
+
+        lr_schedule_critic = tf.keras.optimizers.schedules.ExponentialDecay(
+            initial_learning_rate=3e-4,
+            decay_steps=10000,
+            decay_rate=0.9)
+
+        self.actorOptimizer = Adam(learning_rate=lr_schedule_actor)
+        self.criticOptimizer = Adam(learning_rate=lr_schedule_critic)
 
         self.gamma = 0.99
         self.tau = 0.005
@@ -97,7 +106,7 @@ class Agent():
             qNext = tf.squeeze(self.criticTarget(nextStates, actionNext))
             qCritic = tf.squeeze(self.criticMain(states, actions), 1)
             qBellman = rewards + self.gamma * qNext * (1-dones)
-            criticLoss = keras.losses.MSE(qCritic, qBellman)
+            criticLoss = tf.keras.losses.MSE(qCritic, qBellman)
 
         with tf.GradientTape() as tape2:
             newAction = self.actorMain(states)
@@ -116,7 +125,5 @@ class Agent():
 
     def save(self):
         print('Saving models...')
-        self.actorMain.save_weights('ddpg/models/actor.h5')
-        self.actorTarget.save_weights('ddpg/models/actor_target.h5')
-        self.criticMain.save_weights('ddpg/models/critic.h5')
-        self.criticTarget.save_weights('ddpg/models/critic_target.h5')
+        self.actorMain.save_model()
+        self.criticMain.save_model()

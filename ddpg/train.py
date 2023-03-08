@@ -10,13 +10,15 @@ from gymEnv import Mouse
 
 env = Mouse()
 agent = Agent(len(env.actions), len(env.observations))
-episodes = 1000
+# run the model with a dummy input to initialize the weights
+dummy_state = np.zeros((1, len(env.observations)))
+agent.actorMain(dummy_state)
+episodes = 2000
 movAvglength = 100
 episodeScore = []
 episodeAvgScore = []
 lastAvg = 0
-best = -1000
-testing = False
+best = -100
 history_succes = []
 percent_succes = 0
 
@@ -25,8 +27,6 @@ for episode in range(episodes):
     score = 0
     observation = env.reset()
     while not done:
-        if episode > 3*episodes/4:
-            env.render()
         action = agent.act(np.array([observation]))
         nextObservation, reward, done, _ = env.step(action[0])
         agent.replayBuffer.storexp(
@@ -56,8 +56,10 @@ for episode in range(episodes):
 
     if episode % 100 == 2:
         utils.plotActionVectors(agent, env, episode)
+        utils.plotActionBorderVectors(agent, env, episode)
         utils.plotAction(agent, episode)
-        utils.plotLinearRegion(agent, episode)
-        # utils.plotQ(agent, episode)
+        utils.plotQ(agent, episode)
+        # utils.plotLinearRegion(agent, episode)
+
 
 utils.plotReward(episodeAvgScore)

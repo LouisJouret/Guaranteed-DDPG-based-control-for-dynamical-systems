@@ -1,0 +1,148 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{framed}
+\usepackage[framed]{ntheorem}
+\usepackage{makecell}
+\usepackage{amsfonts}
+\usepackage[hyphens]{url}  %% be sure to specify the option 'hyphens'
+\usepackage{wrapfig}
+\usepackage{ulem}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{gensymb}
+\usepackage{url}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage[thinlines]{easytable}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{fancyhdr}
+%\pagestyle{fancy}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{booktabs}
+\usepackage[toc,page]{appendix}
+\usepackage[table]{xcolor}
+%\renewcommand\labelitemi{--}
+\usepackage{caption}
+\usepackage{wrapfig}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{siunitx}
+\usepackage{multirow}
+\usepackage{lscape}
+\usepackage{multicol}
+\usepackage{textcomp}
+\usepackage{gensymb}
+\usepackage{blindtext}
+\usepackage{mathtools}
+\usepackage{color}
+\usepackage{pdfpages}
+\usepackage[pdftex,bookmarksnumbered,hidelinks,breaklinks]{hyperref}
+\usepackage{commath}
+\usepackage{eurosym}
+\usepackage{lscape}
+\usepackage{subfig}
+\usepackage{natbib}
+%\usepackage{biblatex}
+%\addbibresource{bibliography.bib}
+\usepackage[export]{adjustbox}
+\hypersetup{pdfborder={0 0 0},urlcolor=blue}
+\setlength{\columnsep}{0.5cm}
+
+
+\DeclareMathOperator*{\argminA}{arg\,min}
+
+%\setlength\abovecaptionskip{0.25ex}
+%\setlength\belowcaptionskip{0.25ex}
+\setlength{\parindent}{0cm}
+\setlist{itemsep=0cm}
+%\usepackage{footnote}
+
+
+
+\usepackage{wasysym}%for diameter symbol
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Guaranteed Neural-Network-based control for dynamical systems}
+\lhead{}
+\rfoot{\thepage}
+\setcitestyle{square}
+
+\begin{document}
+
+
+\begin{titlepage}
+
+\pagenumbering{gobble}  %remove page numbering
+
+\begin{center}
+
+    % Upper part of the page. The '~' is needed because \\
+    % only works if a paragraph has started.
+    
+% \includegraphics[scale=0.20]{}\\[2cm]
+
+\vspace{15pt}
+\hrule
+\vspace{0.5cm}
+\textsc{\LARGE{Guaranteed Neural-Network-based control for dynamical systems}\\
+    \vspace{5pt}}
+\vspace{0.5cm}
+\hrule
+\vspace{1cm}
+
+
+% \includegraphics[scale=0.1]{}
+
+
+
+\large{Louis JOURET}
+
+\vfill
+
+
+
+\vfill
+
+\LARGE{Supervised by}\\
+\large{Pr. Adnane Saoud (CentraleSupélec)}\\
+\large{Pr. Aude Billard (EPFL)}
+
+
+\vspace{0.8cm}
+
+\large{August 2023}
+
+
+\vspace{1.5cm}
+
+\setcounter{page}{0}
+\vfill
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+
+\pagenumbering{arabic} %start page numbering
+
+%%%%%%
+
+
+\bibliographystyle{ieeetr}
+\bibliography{bibliography}
+\nocite{*}
+
+\include{introduction.tex}
+\include{theorem.tex}
+\end{document}

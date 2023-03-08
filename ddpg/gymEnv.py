@@ -28,7 +28,7 @@ class Mouse(gym.Env):
         self.timePenalty = 0
         self.actionPenalty = 0
         self.distancePenalty = 0
-        self.obstaclePenalty = -1000
+        self.obstaclePenalty = -100
         self.reward_goal = 1000
 
         self.obstacle_color = (100, 0, 0)
@@ -223,6 +223,7 @@ class Mouse(gym.Env):
             self.clock = pygame.time.Clock()
 
         canvas = pygame.Surface((self.window_size, self.window_size))
+        self.canvas = canvas
         canvas.fill(self.obstacle_color)
 
         pygame.draw.rect(canvas,
@@ -259,7 +260,7 @@ class Mouse(gym.Env):
         self.plotMouse(canvas)
 
         if self.first_run:
-            self.obstacle_set = self.get_obstacle_set(canvas)
+            self.obstacle_set = self.get_obstacle_set()
             self.first_run = False
 
         if self.render_mode == "human":
@@ -413,11 +414,38 @@ class Mouse(gym.Env):
             points_out
         )
 
-    def get_obstacle_set(self, canvas):
+    def get_obstacle_set(self):
         """ get the set of pixels which are colored by the obstacle method"""
         obstacle_set = []
         for pixel_x in range(self.window_size):
             for pixel_y in range(self.window_size):
-                if canvas.get_at((pixel_x, pixel_y)) == self.obstacle_color:
+                if self.canvas.get_at((pixel_x, pixel_y)) == self.obstacle_color:
                     obstacle_set.append((pixel_x, pixel_y))
         return obstacle_set
+
+    def get_border_set(self):
+        """ get the set of pixels which are on the frontier between obstacle and free environment"""
+        border_set = []
+        obstacle_set = self.get_obstacle_set()
+        for pos_x in np.linspace(-5, 5, self.window_size):
+            for pos_y in np.linspace(5, -5, self.window_size):
+                pixel_x, pixel_y = self.pos_to_pixel((pos_x, pos_y))
+                if (pixel_x, pixel_y) not in obstacle_set:
+                    if (self.canvas.get_at((pixel_x - 1, pixel_y - 1)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+                    elif (self.canvas.get_at((pixel_x, pixel_y - 1)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+                    elif (self.canvas.get_at((pixel_x + 1, pixel_y - 1)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+                    elif (self.canvas.get_at((pixel_x - 1, pixel_y)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+                    elif (self.canvas.get_at((pixel_x + 1, pixel_y)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+                    elif (self.canvas.get_at((pixel_x - 1, pixel_y + 1)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+                    elif (self.canvas.get_at((pixel_x, pixel_y + 1)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+                    elif (self.canvas.get_at((pixel_x + 1, pixel_y + 1)) == self.obstacle_color):
+                        border_set.append((pos_x, pos_y))
+
+        return border_set

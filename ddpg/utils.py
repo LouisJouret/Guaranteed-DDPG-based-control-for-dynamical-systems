@@ -10,28 +10,26 @@ import tensorflow as tf
 import polytope as pc
 import numpy as np
 import random
-import keras
 
 
 def plotQ(agent: Agent, iter) -> None:
     "plots a 2D canvas of the Q-function for a given state and action"
     size = 50
     QArray = np.zeros((size, size))
-    print(f"plotting the Q-function for best action ...")
-    for xIdx, x in enumerate(np.linspace(-6, 6, size)):
-        print(f"{round(100*(xIdx/size))} % computed")
-        for yIdx, y in enumerate(np.linspace(6, -6, size)):
-            state = tf.constant([[x, y, 0, 0]], dtype=tf.float32)
-            action = agent.act(state)
+    print(f"Generating the Q-function ...")
+    for xIdx, x in enumerate(np.linspace(-5, 5, size)):
+        for yIdx, y in enumerate(np.linspace(5, -5, size)):
+            state = tf.constant([[x, y]], dtype=tf.float32)
+            action = tf.constant([[1, 0]], dtype=tf.float32)
             Q = agent.criticMain(state, action)
             QArray[yIdx, xIdx] = Q
     plt.imshow(QArray, interpolation='nearest',
-               cmap='hot', extent=[-6, 6, -6, 6])
+               cmap='hot', extent=[-5, 5, -5, 5])
     plt.colorbar()
-    plt.title(f"Q-function for best action")
-    plt.xlabel("y")
-    plt.ylabel("x")
-    plt.savefig(f"ddpg/figures/episode_{iter}_Q.png")
+    plt.title(f"Q-function for action [1,0]")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.savefig(f"ddpg/figures/q_value/episode_{iter}_Q.png")
     plt.close()
 
 
@@ -41,9 +39,8 @@ def plotAction(agent: Agent, iter) -> None:
     size = 50
     AXArray = np.zeros((size, size))
     AYArray = np.zeros((size, size))
-    for xIdx, x in enumerate(np.linspace(-6, 6, size)):
-        # print(f"{round(100*(xIdx/size))} % computed")
-        for yIdx, y in enumerate(np.linspace(6, -6, size)):
+    for xIdx, x in enumerate(np.linspace(-5, 5, size)):
+        for yIdx, y in enumerate(np.linspace(5, -5, size)):
             state = tf.constant([[x, y]], dtype=tf.float32)
             action = agent.act(state)
             AXArray[yIdx, xIdx] = action[0][0]
@@ -62,7 +59,7 @@ def plotAction(agent: Agent, iter) -> None:
     plt.colorbar(ticks=[0.1, 0.3, 0.5, 0.7], orientation='horizontal')
     plt.xlabel("x")
     plt.title("u_y(x,y)")
-    plt.savefig(f"ddpg/figures/episode_{iter}_value.png")
+    plt.savefig(f"ddpg/figures/action_value/episode_{iter}_value.png")
     plt.close()
 
 
@@ -90,7 +87,44 @@ def plotActionVectors(agent: Agent, env, iter) -> None:
     plt.ylabel("y")
     plt.axis('square')
     plt.title(f"action vectors for episode {iter}")
-    plt.savefig(f"ddpg/figures/episode_{iter}_vectors.png")
+    plt.savefig(f"ddpg/figures/action_vectors/episode_{iter}_vectors.png")
+    plt.close()
+
+
+def plotActionBorderVectors(agent: Agent, env, iter) -> None:
+    "plots a 2D canvas of the x input for a given state"
+    print("Generating border action vectors ...")
+    size = env.window_size
+    XArray = np.zeros((size, size))
+    YArray = np.zeros((size, size))
+    AXArray = np.zeros((size, size))
+    AYArray = np.zeros((size, size))
+    border_set = env.get_border_set()
+    # only plot 10% of the vectors
+    # border_set = random.sample(border_set, 0.1*int(len(border_set)))
+    for border_point in border_set:
+        bx, by = border_point
+        by = size-by
+        bx = size-bx
+        print(bx, by)
+        pixel_y, pixel_x = env.pos_to_pixel((bx, by))
+        state = tf.constant([[bx, by]], dtype=tf.float32)
+        action = agent.act(state)
+        AXArray[pixel_y, pixel_x] = action[0][0]
+        AYArray[pixel_y, pixel_x] = action[0][1]
+        XArray[pixel_y, pixel_x] = pixel_x
+        YArray[pixel_y, pixel_x] = pixel_y
+    print(AXArray)
+    fig = plt.figure()
+    plt.quiver(XArray, YArray, AXArray, AYArray)
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.axis('square')
+    # plt.xlim(-6, 6)
+    # plt.ylim(6, -6)
+    plt.title(f"border action vectors for episode {iter}")
+    plt.savefig(
+        f"ddpg/figures/border_action/episode_{iter}_border.png")
     plt.close()
 
 
@@ -109,7 +143,7 @@ def plotLinearRegion(agent: Agent, iter) -> None:
     regions = [RegionReLU(border_polytope, old_S=np.identity(2),
                           old_w_actif=np.identity(2), old_b_actif=np.zeros((2, 1)))]
 
-    for layer in [agent.actorMain.l1, agent.actorMain.l2, agent.actorMain.l3]:
+    for layer in [agent.actorMain.l1, agent.actorMain.l2]:
         weights = layer.weights
         new_regions = []
         for region in regions:
@@ -139,14 +173,15 @@ def plotLinearRegion(agent: Agent, iter) -> None:
 
     fig, ax = plt.subplots()
     for region in new_regions:
-        region.polytope.plot(ax, linewidth=0.5, linestyle='--')
+        region.polytope.plot(ax, linewidth=0.5, linestyle='--', color='white')
     ax.set_xlim(box[0][0]-1, box[1][0] + 1)
     ax.set_ylim(box[0][1]-1, box[1][1] + 1)
     plt.xlabel("x")
     plt.ylabel("y")
     plt.axis('square')
     plt.title(f"{len(regions)} linear regions for episode {iter}")
-    plt.savefig(f"ddpg/figures/episode_{iter}_linear_regions.png")
+    plt.savefig(
+        f"ddpg/figures/linear_regions/episode_{iter}_linear_regions.png")
     plt.close()
 
 
@@ -198,7 +233,7 @@ class RegionReLU:
                 if kid.polytope == pc.intersect(kid.polytope, cut):
                     S.append(1)
                 else:
-                    S.append(0)
+                    S.append(0.01)
             kid.old_S = np.diag(S)
 
     def inherite_actif_para(self):
@@ -219,17 +254,23 @@ class RegionPLU(RegionReLU):
             w = np.array(W[neuron, :])
             b = np.array(B[neuron])
             cut1 = pc.Polytope(np.vstack((self.polytope.A, -w)),
-                               np.append(self.polytope.b, b - 1))
+                               np.append(self.polytope.b, b - 1.5))
             cut2 = pc.Polytope(np.vstack((self.polytope.A, w)),
                                np.append(self.polytope.b, b - 0.5))
             cut3 = pc.Polytope(np.vstack((self.polytope.A, -w)),
                                np.append(self.polytope.b, b + 0.5))
             cut4 = pc.Polytope(np.vstack((self.polytope.A, w)),
-                               np.append(self.polytope.b, b + 1))
+                               np.append(self.polytope.b, b + 1.5))
+            cut5 = pc.Polytope(np.vstack((self.polytope.A, w)),
+                               np.append(self.polytope.b, b + 100))
+            cut6 = pc.Polytope(np.vstack((self.polytope.A, w)),
+                               np.append(self.polytope.b, b - 100))
             self.cuts.append(cut1)
             self.cuts.append(cut2)
             self.cuts.append(cut3)
             self.cuts.append(cut4)
+            self.cuts.append(cut5)
+            self.cuts.append(cut6)
 
         self.kids = [RegionPLU(self.polytope)]
         for cut in self.cuts:

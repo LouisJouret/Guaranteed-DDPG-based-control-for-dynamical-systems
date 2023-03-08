@@ -1,0 +1,67 @@
+% Copyright (c) 2023 Louis Jouret
+% 
+% This software is released under the MIT License.
+% https://opensource.org/licenses/MIT
+
+\section{Introduction}
+
+In recent years, the development of deep learning techniques has led to significant 
+advancements in the field of control systems. One such advancement is the use of neural 
+networks as controllers, which have been widely used in various applications due to 
+their ability to learn complex non-linear control policies for high-dimensional state and action 
+spaces alwhile being computationaly efficient in the foward pass.
+However, the safety of neural network controllers has become a growing concern, 
+as their behavior can be unpredictable and difficult to interpret.
+
+In this master thesis, we aim to apply more traditional and theoretical methods of control 
+systems to investigate and establish the safety of neural network controllers. Specifically, 
+we will analyze the stability and robustness properties of neural network controllers using 
+rigorous mathematical methods, such as Lyapunov theory and viability theory. By using viability 
+theory, we will investigate the regions of state space in which the neural network controller 
+guarantees safe operation, taking into account constraints on the state and input variables.
+
+Our study is motivated by the increasing demand for autonomous systems in various domains, 
+such as robotics, autonomous driving, and aerospace. The safety of these systems is of 
+paramount importance, and our work will contribute to ensuring their safe operation by 
+providing a rigorous analysis of neural network controllers.
+
+
+
+\begin{align}
+    \dot x &= Ax + Bu\\
+    x^{+} &= (I + dt \cdot A)x + dt \cdot Bu
+\end{align}
+
+\begin{align}
+    a(x) = \max{(0.001x, x)}
+\end{align}
+
+\begin{equation}
+    a(x)=
+    \begin{cases}
+      0.001x - 0.999, & \text{if}\ x< -1.5 \\
+      0.5x - 0.25, & \text{if}\ -1.5<x< -0.5 \\
+      x, & \text{if}\ -0.5<x< 0.5 \\
+      0.5x + 0.25, & \text{if}\ 0.5 > x > 1.5 \\
+      0.001x + 0.999, & \text{if}\ x>1.5 \\
+    \end{cases}
+\end{equation}
+
+\begin{equation}
+    \text{Loss} = -Q(s,a)
+\end{equation}
+
+\begin{equation}
+    \text{Loss} = \text{MSE}\{Q(s,a) - (r + \gamma Q(s^{+}, a^{+}))\}
+\end{equation}
+
+\begin{align}
+    u(\Vec{x}) &= NN_{actor}(\Vec{x})\\
+    &= W_{a(\Vec{x})}\cdot \Vec{x} + \Vec{b}_{a(\Vec{x})}
+\end{align}
+
+\begin{align}
+    \Vec{\dot x} &= A\Vec{x} + B\Vec{u}\\
+    &= A\Vec{x} + B(W_{a(\Vec{x})}\cdot \Vec{x} + \Vec{b}_{a(\Vec{x})})\\
+    &= (A + BW_{a(\Vec{x})})\Vec{x} + B\Vec{b}_{a(\Vec{x})}
+\end{align}

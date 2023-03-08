@@ -1,0 +1,50 @@
+% Copyright (c) 2023 Louis Jouret
+% 
+% This software is released under the MIT License.
+% https://opensource.org/licenses/MIT
+
+\section{Theory}
+\newframedtheorem{theorem}{Theorem}
+\newframedtheorem{corollary}{Corollary}[theorem]
+\begin{theorem}
+Consider two closed sets $\mathcal{O}$ and $\mathcal{S}$, such that $\mathcal{O}$ is a practical set defined by
+\begin{equation}
+    \mathcal{O} = \left\{x : g_k(x) \leq 0, k = 1,2,\ldots,r \right\}
+\end{equation}
+
+Now consider the system $\dot{x} = f(x)$ and assume that for each initial
+condition $x(0)$ in $\mathcal{S} \setminus \mathcal{O}$ it admits a unique solution defined for all $t \geq 0$. Then  
+$\mathcal{S} \setminus \mathcal{O}$ is positively invariant for the system if and
+only if the velocity vector satisfies:
+
+\begin{equation}
+    f(x) \notin \mathcal{T}_{\mathcal{O}}(x) \textit{, for all } x \in \partial\mathcal{O} \cap \mathcal{S}
+    \label{eq:th1}
+\end{equation}
+\end{theorem}
+
+Equation (\ref{eq:th1}) can be geometrically interpreted as
+\begin{align*}
+    f(x) \in \left\{z : \nabla g_{i}{(x)}^T z > 0 \text{, for all i} \in B(x)\right\} , \text{where } B(x) = \left\{i : g_i(x) = 0 \right\}
+\end{align*}
+
+\begin{corollary}
+Under the assumption that the set $\mathcal{O}$ is a polytope defined by
+\begin{equation}
+    \mathcal{O} = \left\{x : C_{\mathcal{O}}x \leq d_{\mathcal{O}} \right\}
+\end{equation}
+Let's consider the system $\dot x = f(x)$. Then  
+$\mathcal{S} \setminus \mathcal{O}$ is positively invariant for the 
+system if and only if the velocity vector satisfies:
+
+\begin{equation}
+    f(x) \in \left\{z : \begin{bmatrix}
+        \mathcal{C}_{\mathcal{O}_{i,0}}\\
+        .\\
+        .\\
+        .\\
+        \mathcal{C}_{\mathcal{O}_{i,n}}
+    \end{bmatrix}^T z > 0 \text{, for all }i: \text{row}_i(\mathcal{C}_{\mathcal{O}}) \cdot x = d_{\mathcal{O}_i} \right\}
+    \label{eq:col1}
+\end{equation}
+\end{corollary}

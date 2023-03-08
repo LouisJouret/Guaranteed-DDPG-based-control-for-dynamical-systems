@@ -1,0 +1,29 @@
+% Copyright (c) 2023 Louis Jouret
+% 
+% This software is released under the MIT License.
+% https://opensource.org/licenses/MIT
+
+Deep Deterministic Policy Gradient (DDPG) is a reinforcement learning algorithm that combines ideas 
+from both Q-learning and policy gradient methods and is specifically designed for continuous 
+action spaces. It is a model-free algorithm, meaning that it learns directly from experience without 
+requiring a model of the environment. 
+
+The algorithm works by estimating a value function, which maps the 
+state-action pairs to a value representing the expected future reward. This value function is 
+then used to update a policy, which maps the states to actions. The policy is learned using an 
+actor-critic approach, where the critic estimates the value function and the actor updates the 
+policy based on the estimated value function. The critic is trained using the Bellman equation, 
+which is a recursive equation that relates the value of a state-action pair to the value of its 
+successor state-action pair. The actor is trained using the policy gradient, which is a 
+gradient-based optimization method that maximizes the expected future reward.
+
+One of the key features of DDPG is that it uses a deep neural network to approximate the 
+value function and the policy. This allows DDPG to handle high-dimensional state spaces, 
+which are common in real-world applications. The use of a neural network also allows DDPG 
+to learn complex non-linear mappings between states and actions, which can be difficult 
+to achieve with traditional control methods.
+
+Overall, DDPG is a powerful and versatile reinforcement learning algorithm that has shown 
+promising results in various applications. However, the safety of DDPG controllers remains 
+a major concern due to their complexity and non-linear behavior, which motivates the need 
+for further analysis and investigation.

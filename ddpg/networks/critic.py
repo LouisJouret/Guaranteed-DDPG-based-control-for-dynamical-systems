@@ -25,8 +25,14 @@ class Critic(keras.Model):
             self.layer2Dim, activation=keras.layers.LeakyReLU(alpha=0.01))
         self.lq = Dense(1, activation=None)
 
-    def __call__(self, state, action):
+    def call(self, state, action):
         x = self.l1(tf.concat([state, action], axis=1))
         x = self.l2(x)
         x = self.lq(x)
         return x
+
+    def save_model(self):
+        self.save_weights('ddpg/models/critic.h5')
+
+    def load_model(self):
+        self.load_weights('ddpg/models/critic.h5')
